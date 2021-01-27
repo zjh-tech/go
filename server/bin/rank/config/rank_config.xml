@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!--Id=唯一标志  GameId=游戏编号 FuncId=功能编号 GameDesc=游戏描述 FuncDesc=功能描述 RankSize=榜总大小 RankSrvId=排行榜服务器ID-->
+<config>
+	<rank Id="1"  GameId="1" FuncId="1" GameDesc="音乐" FuncDesc="等级榜" RankSize="7"  RankSrvId="3200" />
+</config>
+

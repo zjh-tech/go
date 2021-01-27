@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<config>
+    <servicename>tsrobot</servicename>
+    <servertype>1001</servertype>
+    <logdir>./log</logdir>    
+    <loglevel>1</loglevel> <!--0: debug, 1: info, 2:warn 3：error -->
+</config>
+

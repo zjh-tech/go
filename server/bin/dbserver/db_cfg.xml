@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+
+<db TableAmount="1">
+  <connect DBName="gamedb_0" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />  
+</db>
+
+<!--bilibili must set 10 databases 10 tables-->
+
+<!--
+
+<db TableAmount="10">
+  <connect DBName="gamedb_0" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+  <connect DBName="gamedb_1" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+  <connect DBName="gamedb_2" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+  <connect DBName="gamedb_3" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+  <connect DBName="gamedb_4" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+  <connect DBName="gamedb_5" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+  <connect DBName="gamedb_6" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+  <connect DBName="gamedb_7" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+  <connect DBName="gamedb_8" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+  <connect DBName="gamedb_9" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+</db>
+
+-->

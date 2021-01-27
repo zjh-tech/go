@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!--bilibili must set 1 databases n tables-->
+<db TableAmount="1">
+  <connect DBName="rankdb_0" DBHost="127.0.0.1" DBPort="3306" DBUser="root" DBPassword="123456"  Charset="utf8" />
+</db>
+

@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<config>
+	<whitelist>127.0.0.1</whitelist>
+	<servertype>
+		<server type="tsregister"   enum="1"/>     <!-- 3000~3049 -->
+		<server type="tsbalance"  	enum="2"/>	   <!-- 3050~3099 -->
+		<server type="tsgate"   	enum="3"/>	   <!-- 3100~3199 -->	
+		<server type="tsrank"   	enum="4"/>	   <!-- 3200~3299 -->
+		<server type="tsrobot"   	enum="5"/>     
+	</servertype>
+
+	<connection>		
+		<server start="tsgate"    end="tsbalance,tsrank"/>
+	</connection>		
+
+	<s2slist>
+		<!--client login  gate port 4000~4499-->				
+		<server id="3000" type="tsregister"/>
+		<server id="3050" type="tsbalance" inter="127.0.0.1:4000"  outer="127.0.0.1:4000" token="123456"/>
+		<server id="3100" type="tsgate"	token="123456"/>		
+		<server id="3200" type="tsrank"    inter="127.0.0.1:4001"  outer="127.0.0.1:4001" token="123456"/>		
+	</s2slist>
+
+	<c2slist>
+		<!--client login  gate port 4500~4999-->
+		<server id="3050" type="tsbalance"	inter="192.168.92.143:5000"  outer="192.168.92.143:5000" maxcount="1000"/>
+		<server id="3100" type="tsgate"	inter="192.168.92.143:5001"  outer="192.168.92.143:5001" maxcount="1000"/>				
+	</c2slist>
+</config>
