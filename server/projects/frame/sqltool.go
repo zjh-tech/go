@@ -8,37 +8,23 @@ import (
 	"unsafe"
 )
 
-// add `` to all table field.
-// just usw bytes.Buffer to string to build sql statement.
-
-func putString(buf *bytes.Buffer, field string, equal bool) {
+func add_single_quotes_string(buf *bytes.Buffer, field string) {
 	buf.WriteString("`")
 	buf.WriteString(field)
-	if equal {
-		buf.WriteString("`=")
-	} else {
-		buf.WriteString("`")
-	}
+	buf.WriteString("`")
 }
 
-// 和上面不一样的引用方式哦。
-func putValue(buf *bytes.Buffer, value string) {
-	buf.WriteString("'")
-	buf.WriteString(value)
-	buf.WriteString("'")
-}
-
-func asSQLString(src interface{}) string {
+func as_sql_string(src interface{}) string {
 	switch v := src.(type) {
 	case string:
 		var buf bytes.Buffer
-		putValue(&buf, v)
+		add_single_quotes_string(&buf, v)
 		return buf.String()
 
 	case []byte:
 		var buf bytes.Buffer
 		strValue := (*string)(unsafe.Pointer(&v)) // 这种效率更高
-		putValue(&buf, *strValue)
+		add_single_quotes_string(&buf, *strValue)
 		return buf.String()
 	}
 
@@ -83,7 +69,7 @@ func NewDBFieldPair() *DBFieldPair {
 }
 
 func (d *DBFieldPair) Add(key string, value interface{}) {
-	str := asSQLString(value)
+	str := as_sql_string(value)
 	d.FieldMap[key] = str
 }
 
@@ -98,7 +84,7 @@ func GetSelectSQL(tbl string, selects *DBField, wheres *DBFieldPair) string {
 			if index != 0 {
 				buf.WriteString(" , ")
 			}
-			putString(&buf, name, false)
+			add_single_quotes_string(&buf, name)
 		}
 	}
 
@@ -113,7 +99,8 @@ func GetSelectSQL(tbl string, selects *DBField, wheres *DBFieldPair) string {
 				buf.WriteString(" AND ")
 			}
 			firstflag = false
-			putString(&buf, k, true)
+			add_single_quotes_string(&buf, k)
+			buf.WriteString("=")
 			buf.WriteString(v)
 		}
 	}
@@ -137,7 +124,7 @@ func GetInsertSQL(tbl string, inserts *DBFieldPair) string {
 				buf.WriteString(" , ")
 			}
 			firstflag = false
-			putString(&buf, k, false)
+			add_single_quotes_string(&buf, k)
 			values = append(values, v)
 		}
 		buf.WriteString(" ) VALUES(")
@@ -171,7 +158,9 @@ func GetUpdateSQL(tbl string, updates *DBFieldPair, wheres *DBFieldPair) string 
 			}
 			firstflag = false
 
-			putString(&buf, k, true)
+			add_single_quotes_string(&buf, k)
+			buf.WriteString("=")
+
 			buf.WriteString(v)
 		}
 	}
@@ -184,8 +173,8 @@ func GetUpdateSQL(tbl string, updates *DBFieldPair, wheres *DBFieldPair) string 
 				buf.WriteString(" AND ")
 			}
 			firstflag = false
-
-			putString(&buf, k, true)
+			add_single_quotes_string(&buf, k)
+			buf.WriteString("=")
 			buf.WriteString(v)
 		}
 	}
@@ -207,7 +196,8 @@ func GetDeleteSQL(tbl string, wheres *DBFieldPair) string {
 			}
 			firstflag = false
 
-			putString(&buf, k, true)
+			add_single_quotes_string(&buf, k)
+			buf.WriteString("=")
 			buf.WriteString(v)
 		}
 	}
@@ -215,15 +205,6 @@ func GetDeleteSQL(tbl string, wheres *DBFieldPair) string {
 	return buf.String()
 }
 
-// find key from list
-func find(key string, l []string) bool {
-	for i := 0; i < len(l); i++ {
-		if l[i] == key {
-			return true
-		}
-	}
-	return false
-}
 func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) string {
 	var buf bytes.Buffer
 	buf.WriteString("INSERT INTO ")
@@ -240,7 +221,7 @@ func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) strin
 			}
 			firstflag = false
 
-			putString(&buf, k, false)
+			add_single_quotes_string(&buf, k)
 			values = append(values, v)
 		}
 
@@ -258,8 +239,15 @@ func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) strin
 
 	if keys != nil { // exclude key value.
 		firstflag := true
-		for k, v := range updates.FieldMap { // key
-			if find(k, keys.Fileds) {
+		for k, v := range updates.FieldMap {
+			key_exist_flag := false
+			for key_index := 0; key_index < len(keys.Fileds); key_index++ {
+				if keys.Fileds[key_index] == k {
+					key_exist_flag = true
+				}
+			}
+
+			if key_exist_flag == true {
 				continue
 			}
 
@@ -268,13 +256,15 @@ func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) strin
 			}
 			firstflag = false
 
-			putString(&buf, k, true)
+			add_single_quotes_string(&buf, k)
+			buf.WriteString("=")
 			buf.WriteString(v)
 		}
 	}
 	return buf.String()
 }
 
+//--------------------------------------------------------------------------------------
 func BuildSelectSQL(tbl string, selects []string, wheres map[string]interface{}) string {
 	var selectfields *DBField
 	if selects != nil {
