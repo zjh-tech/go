@@ -52,6 +52,7 @@ func (m *MysqlConn) Connect(dsn string) error {
 	m.sqlDB.SetMaxOpenConns(1)
 	m.sqlDB.SetConnMaxLifetime(0)
 	m.run()
+
 	return nil
 }
 
@@ -59,6 +60,7 @@ func (m *MysqlConn) AddComand(command IMysqlCommand) {
 	m.cmdQueue <- command
 }
 
+//mysql源码(EscapeBytesBackslash)只对[]byte转义,这里是对已经拼接好的sql转义
 func (m *MysqlConn) EscapeString(sql string) string {
 	src_len := len(sql)
 	des_capacity := src_len * 2
@@ -125,7 +127,7 @@ func (m *MysqlConn) EscapeString(sql string) string {
 			}
 		}
 	}
-	return string(des_buf)
+	return string(des_buf[:index])
 }
 
 func (m *MysqlConn) run() {
@@ -145,6 +147,10 @@ func (m *MysqlConn) run() {
 			}
 		}
 	}()
+}
+
+func (m *MysqlConn) FindSqlDb() *sql.DB {
+	return m.sqlDB
 }
 
 func (m *MysqlConn) QueryWithResult(sql string) (IMysqlRecordSet, error) {

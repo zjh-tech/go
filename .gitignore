@@ -2,6 +2,7 @@
 pkg
 go.sum
 *.exe
+log
 server/bin/battleserver/battleserver
 server/bin/centerserver/centerserver
 server/bin/dbserver/dbserver
