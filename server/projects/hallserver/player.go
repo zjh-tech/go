@@ -139,6 +139,7 @@ func (p *Player) Send2CenterHashAccountId(msgID uint32, msg proto.Message) bool 
 	tranfer := pb.S2SHcTranferMsg{}
 	tranfer.Msgid = msgID
 	tranfer.Datas = datas
-	return frame.GSSServerSessionMgr.SendProtoMsgByHashIdAndSrvType(p.accountId, frame.CENTER_SERVER_TYPE,
-		uint32(pb.S2SLogicMsgId_s2s_hc_tranfer_msg_id), &tranfer)
+	//return frame.GSSServerSessionMgr.SendProtoMsgByHashIdAndSrvType(p.accountId, frame.CENTER_SERVER_TYPE,
+	//	uint32(pb.S2SLogicMsgId_s2s_hc_tranfer_msg_id), &tranfer)
+	return true
 }

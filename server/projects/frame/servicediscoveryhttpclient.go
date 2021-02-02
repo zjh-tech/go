@@ -27,7 +27,7 @@ const (
 
 type SDHttpCbFunc func(...interface{})
 
-func SendServiceDiscoveryHttpsReq(url string, msgID uint32, datas []byte) {
+func SendServiceDiscoveryHttpReq(url string, msgID uint32, datas []byte) {
 	buff := bytes.NewBuffer([]byte{})
 	binary.Write(buff, binary.BigEndian, msgID)
 	binary.Write(buff, binary.BigEndian, datas)
@@ -79,7 +79,7 @@ func (s *ServiceDiscoveryHttpClient) Init(_url string, _serverID uint64, _token 
 			Token:    token,
 		}
 		datas, _ := proto.Marshal(req)
-		go SendServiceDiscoveryHttpsReq(url, uint32(pb.S2SBaseMsgId_service_discovery_req_id), datas)
+		go SendServiceDiscoveryHttpReq(url, uint32(pb.S2SBaseMsgId_service_discovery_req_id), datas)
 	}, []interface{}{full_url, _serverID, _token}, true)
 
 	return true

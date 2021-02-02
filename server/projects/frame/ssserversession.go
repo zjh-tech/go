@@ -432,32 +432,32 @@ func (s *SSServerSessionMgr) GetSessionIdByHashIdAndSrvType(hashId uint64, serve
 	return sessionId
 }
 
-func (s *SSServerSessionMgr) SendProtoMsgByHashIdAndSrvType(hashId uint64, serverType uint32, msgID uint32, msg proto.Message) bool {
-	logicServerArray := s.FindLogicServerByServerType(serverType)
-	logicServerLen := uint64(len(logicServerArray))
-	if logicServerLen == 0 {
-		return false
-	}
-
-	var serverSess *SSServerSession
-	logicServerIndex := hashId % logicServerLen
-	for index, logicServer := range logicServerArray {
-		if uint64(index) == logicServerIndex {
-			if logicServer.GetServerSession() != nil {
-				serverSess = logicServer.GetServerSession()
-			}
-			break
-		}
-	}
-
-	if serverSess == nil {
-		elog.ErrorAf("[SSServerSessionMgr] GetServerIdByHashId ServerType=%v,HashId=%v Error", serverType, hashId)
-		return false
-	}
-
-	serverSess.AsyncSendProtoMsg(msgID, msg, nil)
-	return true
-}
+//func (s *SSServerSessionMgr) SendProtoMsgByHashIdAndSrvType(hashId uint64, serverType uint32, msgID uint32, msg proto.Message) bool {
+//	logicServerArray := s.FindLogicServerByServerType(serverType)
+//	logicServerLen := uint64(len(logicServerArray))
+//	if logicServerLen == 0 {
+//		return false
+//	}
+//
+//	var serverSess *SSServerSession
+//	logicServerIndex := hashId % logicServerLen
+//	for index, logicServer := range logicServerArray {
+//		if uint64(index) == logicServerIndex {
+//			if logicServer.GetServerSession() != nil {
+//				serverSess = logicServer.GetServerSession()
+//			}
+//			break
+//		}
+//	}
+//
+//	if serverSess == nil {
+//		elog.ErrorAf("[SSServerSessionMgr] GetServerIdByHashId ServerType=%v,HashId=%v Error", serverType, hashId)
+//		return false
+//	}
+//
+//	serverSess.AsyncSendProtoMsg(msgID, msg, nil)
+//	return true
+//}
 
 func (s *SSServerSessionMgr) SSServerConnect(ServerID uint64, ServerType uint32, ServerTypeStr string, Outer string, Token string) {
 	session := s.CreateSession()
