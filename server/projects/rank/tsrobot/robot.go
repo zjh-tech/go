@@ -23,7 +23,7 @@ func (t *TsRobot) Init() bool {
 	t.timerRegister = etimer.NewTimerRegister()
 
 	//Log
-	elog.InitLog("./log", 0, nil, nil)
+	elog.Init("./log", 0, nil)
 	elog.Info("Server Log System Init Success")
 
 	rand.Seed(time.Now().UnixNano())
@@ -69,7 +69,7 @@ func (r *TsRobot) Run() {
 }
 
 func (t *TsRobot) UnInit() {
-
+	elog.UnInit(nil)
 }
 
 const (

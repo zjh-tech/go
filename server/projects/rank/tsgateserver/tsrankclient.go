@@ -52,6 +52,10 @@ func (c *TsRankClient) OnDisconnect(sess *frame.SSClientSession) {
 	elog.InfoAf("[TsRankClient] SessId=%v OnDisconnect", sess.GetSessID())
 }
 
+func (c *TsRankClient) OnBeatHeartError(sess *frame.SSClientSession) {
+
+}
+
 func OnHandlerC2TsTsgateVerifyReq(datas []byte, sess *frame.SSClientSession) bool {
 	req := pb.C2TsTsgateVerifyReq{}
 	unmarshalErr := proto.Unmarshal(datas, &req)

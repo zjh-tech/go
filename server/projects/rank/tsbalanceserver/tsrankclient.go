@@ -51,6 +51,10 @@ func (c *TsRankClient) OnDisconnect(sess *frame.SSClientSession) {
 	elog.InfoAf("[TsRankClient] SessId=%v OnDisconnect", sess.GetSessID())
 }
 
+func (c *TsRankClient) OnBeatHeartError(sess *frame.SSClientSession) {
+
+}
+
 func GetMinLoadTsGateway() *TsGatewayServer {
 	var minLoadGateway *TsGatewayServer = nil
 	minClientCount := uint32(0)

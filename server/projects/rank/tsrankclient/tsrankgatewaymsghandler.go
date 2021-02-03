@@ -52,6 +52,9 @@ func (r *RankGatewayMsgHandler) OnDisconnect(sess *frame.SSClientSession) {
 	GRankGatewaySession = nil
 	r.timerRegister.KillAllTimer()
 }
+func (r *RankGatewayMsgHandler) OnBeatHeartError(sess *frame.SSClientSession) {
+
+}
 
 func OnHandlerTs2CTsgateVerifyAck(datas []byte, sess *frame.SSClientSession) bool {
 	GTsRankClient.tsGatewayVerifyOk = true

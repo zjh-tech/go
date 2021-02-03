@@ -48,6 +48,10 @@ func (r *RankBalanceMsgHandler) OnDisconnect(sess *frame.SSClientSession) {
 	GTsRankClient.tsBalanceSessID = 0
 }
 
+func (r *RankBalanceMsgHandler) OnBeatHeartError(sess *frame.SSClientSession) {
+
+}
+
 var GRankBalanceMsgHandler *RankBalanceMsgHandler
 
 func init() {
