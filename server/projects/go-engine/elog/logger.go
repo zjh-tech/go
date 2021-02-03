@@ -45,6 +45,8 @@ type Logger struct {
 	buf           bytes.Buffer
 	callDepth     int
 	closeFlag     bool
+	initCbFunc    FuncType
+	unInitCbFunc  FuncType
 }
 
 func NewLogger(out io.Writer, fileDir string, level int) *Logger {
@@ -61,18 +63,18 @@ func NewLogger(out io.Writer, fileDir string, level int) *Logger {
 	return logger
 }
 
-func (l *Logger) StartWriterGoroutine(startCb FuncType, endCb FuncType) {
+func (l *Logger) StartWriterGoroutine() {
 	fmt.Printf(" Log Goroutine Start \n")
 
-	if startCb != nil {
-		startCb()
+	if l.initCbFunc != nil {
+		l.initCbFunc()
 	}
 
 	go func() {
 		defer func() {
 			fmt.Printf(" Log Goroutine Exit \n")
-			if endCb != nil {
-				endCb()
+			if l.unInitCbFunc != nil {
+				l.unInitCbFunc()
 			}
 		}()
 		exit := false
@@ -97,6 +99,14 @@ func (l *Logger) StartWriterGoroutine(startCb FuncType, endCb FuncType) {
 func (l *Logger) Close() {
 	l.closeFlag = true
 	close(l.exitChan)
+}
+
+func (l *Logger) SetInitCbFunc(initCb FuncType) {
+	l.initCbFunc = initCb
+}
+
+func (l *Logger) SetUnInitCbFunc(unInitCb FuncType) {
+	l.unInitCbFunc = unInitCb
 }
 
 func (l *Logger) AddEvent(level int, content string, async bool) {

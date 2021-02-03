@@ -17,7 +17,7 @@ type Robot struct {
 //https://github.com/bigwhite/experiments/tree/master/gohttps
 func (r *Robot) Init() bool {
 	//Log
-	elog.Init("./log", 1, nil, nil)
+	elog.Init("./log", 1, nil)
 	elog.Info("Server Log System Init Success")
 
 	if !enet.GNet.Init() {
@@ -65,5 +65,5 @@ func (r *Robot) Run() {
 }
 
 func (r *Robot) UnInit() {
-
+	elog.UnInit(nil)
 }

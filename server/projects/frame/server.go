@@ -72,8 +72,6 @@ func (s *Server) Init() bool {
 	//Log
 	elog.Init(GServerCfg.LogDir, GServerCfg.LogLevel, func(i ...interface{}) {
 		s.wg.Add(1)
-	}, func(i ...interface{}) {
-		s.wg.Done()
 	})
 
 	elog.Info("Server Log System Init Success")
@@ -124,7 +122,9 @@ func (s *Server) Init() bool {
 func (s *Server) UnInit() {
 	enet.GNet.UnInit()
 	etimer.GTimerMgr.UnInit()
-	elog.UnInit()
+	elog.UnInit(func(i ...interface{}) {
+		s.wg.Done()
+	})
 	s.wg.Wait()
 }
 

@@ -11,13 +11,15 @@ type FuncType func(...interface{})
 type ArgType []interface{}
 
 //level: debug 0 info 1 warn 2 error 3
-func Init(dir string, level int, startCb FuncType, endCb FuncType) {
+func Init(dir string, level int, initCb FuncType) {
 	GLogger = NewLogger(os.Stderr, dir, level)
-	GLogger.StartWriterGoroutine(startCb, endCb)
+	GLogger.SetInitCbFunc(initCb)
+	GLogger.StartWriterGoroutine()
 }
 
-func UnInit() {
+func UnInit(unInitCb FuncType) {
 	if GLogger != nil {
+		GLogger.SetUnInitCbFunc(unInitCb)
 		GLogger.Close()
 		GLogger = nil
 	}
