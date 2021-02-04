@@ -60,76 +60,6 @@ func (m *MysqlConn) AddComand(command IMysqlCommand) {
 	m.cmdQueue <- command
 }
 
-//mysql源码(EscapeBytesBackslash)只对[]byte转义,这里是对已经拼接好的sql转义
-func (m *MysqlConn) EscapeString(sql string) string {
-	src_len := len(sql)
-	des_capacity := src_len * 2
-	des_buf := make([]byte, des_capacity)
-	src_buf := []byte(sql)
-
-	index := 0
-	for i := 0; i < src_len; i++ {
-		c := src_buf[i]
-		switch c {
-		case '\x00':
-			{
-				des_buf[index] = '\\'
-				index++
-				des_buf[index] = '0'
-				index++
-			}
-		case '\n':
-			{
-				des_buf[index] = '\\'
-				index++
-				des_buf[index] = 'n'
-				index++
-			}
-		case '\r':
-			{
-				des_buf[index] = '\\'
-				index++
-				des_buf[index] = 'r'
-				index++
-			}
-		case '\x1a':
-			{
-				des_buf[index] = '\\'
-				index++
-				des_buf[index] = 'Z'
-				index++
-			}
-		case '\'':
-			{
-				des_buf[index] = '\\'
-				index++
-				des_buf[index] = '\''
-				index++
-			}
-		case '"':
-			{
-				des_buf[index] = '\\'
-				index++
-				des_buf[index] = '"'
-				index++
-			}
-		case '\\':
-			{
-				des_buf[index] = '\\'
-				index++
-				des_buf[index] = '\\'
-				index++
-			}
-		default:
-			{
-				des_buf[index] = c
-				index++
-			}
-		}
-	}
-	return string(des_buf[:index])
-}
-
 func (m *MysqlConn) run() {
 	go func() {
 		for {
@@ -154,8 +84,7 @@ func (m *MysqlConn) FindSqlDb() *sql.DB {
 }
 
 func (m *MysqlConn) QueryWithResult(sql string) (IMysqlRecordSet, error) {
-	escape_string_sql := m.EscapeString(sql)
-	rows, err := m.sqlDB.Query(escape_string_sql)
+	rows, err := m.sqlDB.Query(sql)
 	if err != nil {
 		elog.ErrorAf("[Mysql] QueryWithResult Sql=%v, Error=%v", sql, err)
 		return nil, err
@@ -166,8 +95,7 @@ func (m *MysqlConn) QueryWithResult(sql string) (IMysqlRecordSet, error) {
 }
 
 func (m *MysqlConn) QueryWithoutResult(sql string) (IMysqlRecordSet, error) {
-	escape_string_sql := m.EscapeString(sql)
-	res, err := m.sqlDB.Exec(escape_string_sql)
+	res, err := m.sqlDB.Exec(sql)
 	if err != nil {
 		elog.InfoAf("[Mysql] QueryWithoutResult Sql=%v, Error=%v", sql, err)
 		return nil, err

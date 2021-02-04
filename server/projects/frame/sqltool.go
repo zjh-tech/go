@@ -8,6 +8,76 @@ import (
 	"unsafe"
 )
 
+//mysql源码(EscapeBytesBackslash)只对[]byte转义,这里是对已经拼接好的sql转义
+func escape_string(sql string) string {
+	src_len := len(sql)
+	des_capacity := src_len * 2
+	des_buf := make([]byte, des_capacity)
+	src_buf := []byte(sql)
+
+	index := 0
+	for i := 0; i < src_len; i++ {
+		c := src_buf[i]
+		switch c {
+		case '\x00':
+			{
+				des_buf[index] = '\\'
+				index++
+				des_buf[index] = '0'
+				index++
+			}
+		case '\n':
+			{
+				des_buf[index] = '\\'
+				index++
+				des_buf[index] = 'n'
+				index++
+			}
+		case '\r':
+			{
+				des_buf[index] = '\\'
+				index++
+				des_buf[index] = 'r'
+				index++
+			}
+		case '\x1a':
+			{
+				des_buf[index] = '\\'
+				index++
+				des_buf[index] = 'Z'
+				index++
+			}
+		case '\'':
+			{
+				des_buf[index] = '\\'
+				index++
+				des_buf[index] = '\''
+				index++
+			}
+		case '"':
+			{
+				des_buf[index] = '\\'
+				index++
+				des_buf[index] = '"'
+				index++
+			}
+		case '\\':
+			{
+				des_buf[index] = '\\'
+				index++
+				des_buf[index] = '\\'
+				index++
+			}
+		default:
+			{
+				des_buf[index] = c
+				index++
+			}
+		}
+	}
+	return string(des_buf[:index])
+}
+
 func add_single_quotes_string(buf *bytes.Buffer, field string) {
 	buf.WriteString("`")
 	buf.WriteString(field)
@@ -18,13 +88,15 @@ func as_sql_string(src interface{}) string {
 	switch v := src.(type) {
 	case string:
 		var buf bytes.Buffer
-		add_single_quotes_string(&buf, v)
+		escape_string_sql := escape_string(v)
+		add_single_quotes_string(&buf, escape_string_sql)
 		return buf.String()
 
 	case []byte:
 		var buf bytes.Buffer
 		strValue := (*string)(unsafe.Pointer(&v)) // 这种效率更高
-		add_single_quotes_string(&buf, *strValue)
+		escape_string_sql := escape_string(*strValue)
+		add_single_quotes_string(&buf, escape_string_sql)
 		return buf.String()
 	}
 
@@ -84,7 +156,7 @@ func GetSelectSQL(tbl string, selects *DBField, wheres *DBFieldPair) string {
 			if index != 0 {
 				buf.WriteString(" , ")
 			}
-			add_single_quotes_string(&buf, name)
+			buf.WriteString(name)
 		}
 	}
 
@@ -99,7 +171,7 @@ func GetSelectSQL(tbl string, selects *DBField, wheres *DBFieldPair) string {
 				buf.WriteString(" AND ")
 			}
 			firstflag = false
-			add_single_quotes_string(&buf, k)
+			buf.WriteString(k)
 			buf.WriteString("=")
 			buf.WriteString(v)
 		}
@@ -124,7 +196,7 @@ func GetInsertSQL(tbl string, inserts *DBFieldPair) string {
 				buf.WriteString(" , ")
 			}
 			firstflag = false
-			add_single_quotes_string(&buf, k)
+			buf.WriteString(k)
 			values = append(values, v)
 		}
 		buf.WriteString(" ) VALUES(")
@@ -157,10 +229,8 @@ func GetUpdateSQL(tbl string, updates *DBFieldPair, wheres *DBFieldPair) string 
 				buf.WriteString(" , ")
 			}
 			firstflag = false
-
-			add_single_quotes_string(&buf, k)
+			buf.WriteString(k)
 			buf.WriteString("=")
-
 			buf.WriteString(v)
 		}
 	}
@@ -173,7 +243,7 @@ func GetUpdateSQL(tbl string, updates *DBFieldPair, wheres *DBFieldPair) string 
 				buf.WriteString(" AND ")
 			}
 			firstflag = false
-			add_single_quotes_string(&buf, k)
+			buf.WriteString(k)
 			buf.WriteString("=")
 			buf.WriteString(v)
 		}
@@ -196,7 +266,7 @@ func GetDeleteSQL(tbl string, wheres *DBFieldPair) string {
 			}
 			firstflag = false
 
-			add_single_quotes_string(&buf, k)
+			buf.WriteString(k)
 			buf.WriteString("=")
 			buf.WriteString(v)
 		}
@@ -221,7 +291,7 @@ func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) strin
 			}
 			firstflag = false
 
-			add_single_quotes_string(&buf, k)
+			buf.WriteString(k)
 			values = append(values, v)
 		}
 
@@ -256,7 +326,7 @@ func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) strin
 			}
 			firstflag = false
 
-			add_single_quotes_string(&buf, k)
+			buf.WriteString(k)
 			buf.WriteString("=")
 			buf.WriteString(v)
 		}
