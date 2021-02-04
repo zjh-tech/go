@@ -96,7 +96,7 @@ func as_sql_string(src interface{}) string {
 		var buf bytes.Buffer
 		strValue := (*string)(unsafe.Pointer(&v)) // 这种效率更高
 		escape_string_sql := escape_string(*strValue)
-		add_single_quotes_string(&buf, escape_string_sql)
+		buf.WriteString(escape_string_sql)
 		return buf.String()
 	}
 
