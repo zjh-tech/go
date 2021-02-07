@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"unsafe"
 )
 
 //mysql源码(EscapeBytesBackslash)只对[]byte转义,这里是对已经拼接好的sql转义
@@ -94,9 +93,7 @@ func as_sql_string(src interface{}) string {
 
 	case []byte:
 		var buf bytes.Buffer
-		strValue := (*string)(unsafe.Pointer(&v)) // 这种效率更高
-		escape_string_sql := escape_string(*strValue)
-		buf.WriteString(escape_string_sql)
+		buf.Write(v)
 		return buf.String()
 	}
 
