@@ -2,18 +2,27 @@ package main
 
 import (
 	"projects/go-engine/elog"
+	"projects/util"
 	"time"
 )
 
 func main() {
-	elog.InitLog("./log", 0, nil, nil)
-	for i := 0; i < 10000000; i++ {
-		elog.DebugA("DebugA")
-		elog.InfoA("InfoA")
-	}
+	elog.Init("./log", 0, nil)
 
-	elog.Debug("a")
-	elog.Info("b")
+	start_tick := util.GetMillsecond()
+	qps_count := 0
+	loop_num := 500000
+	for i := 0; i < loop_num; i++ {
+		elog.Debug("DebugA")
+
+		qps_count++
+		end_tick := util.GetMillsecond()
+		if (end_tick - start_tick) >= 1000 {
+			elog.InfoAf("Sync Qps=%v", qps_count)
+			qps_count = 0
+			start_tick = end_tick
+		}
+	}
 
 	for {
 		time.Sleep(1 * time.Second)

@@ -1,16 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"projects/frame"
 	"projects/go-engine/elog"
 	"projects/go-engine/eredis"
+	"projects/util"
 	"time"
 )
 
 func main() {
-	elog.InitLog("./log", 0, nil, nil)
+	elog.Init("./log", 0, nil)
 
-	if err := frame.GRedisCfgMgr.Load("../../../bin/redis_cfg.xml"); err != nil {
+	if err := frame.GRedisCfgMgr.Load("../../../bin/serverconfig/redis_cfg.xml"); err != nil {
 		elog.Errorf("RedidCfgMgr Load Error=%v", err)
 		return
 	}
@@ -20,20 +22,40 @@ func main() {
 		return
 	}
 
-	eredis.GRedisModule.GetRedisClient(1).Set("id", []byte(string(1)))
-	eredis.GRedisModule.GetRedisClient(2).Set("id", []byte(string(2)))
-	eredis.GRedisModule.GetRedisClient(3).Set("id", []byte(string(3)))
-	eredis.GRedisModule.GetRedisClient(4).Set("id", []byte(string(4)))
-	eredis.GRedisModule.GetRedisClient(5).Set("id", []byte(string(5)))
-	eredis.GRedisModule.GetRedisClient(6).Set("id", []byte(string(6)))
-	eredis.GRedisModule.GetRedisClient(7).Set("id", []byte(string(7)))
-	eredis.GRedisModule.GetRedisClient(8).Set("id", []byte(string(8)))
-	eredis.GRedisModule.GetRedisClient(9).Set("id", []byte(string(9)))
-	eredis.GRedisModule.GetRedisClient(10).Set("id", []byte(string(10)))
+	//虚拟机 cpu : 8核
+	//Redis Get QPS Set QPS 1.2万
+	start_tick := util.GetMillsecond()
+	qps_count := 0
+	loop_num := 500000
+	for i := 0; i < loop_num; i++ {
+		key := fmt.Sprintf("id%v", i)
+		eredis.GRedisModule.GetRedisClient(uint64(i)).Set(key, []byte(util.Int2Str(i)))
 
-	for i := 0; i < 10; i++ {
-		value, _ := eredis.GRedisModule.GetRedisClient(uint64(i)).Get("id")
-		elog.InfoAf("[id] uid=%v, value=%v", i, value)
+		qps_count++
+		end_tick := util.GetMillsecond()
+		if (end_tick - start_tick) >= 1000 {
+			elog.InfoAf("Get Qps=%v", qps_count)
+			qps_count = 0
+			start_tick = end_tick
+		}
+	}
+
+	qps_count = 0
+	for i := 0; i < loop_num; i++ {
+		key := fmt.Sprintf("id%v", i)
+		id_value, _ := eredis.GRedisModule.GetRedisClient(uint64(i)).Get(key)
+		value, _ := util.Str2Int(string(id_value))
+		if value != i {
+			elog.InfoAf("key=%v, value=%v", key, value)
+		}
+
+		qps_count++
+		end_tick := util.GetMillsecond()
+		if (end_tick - start_tick) >= 1000 {
+			elog.InfoAf("Set Qps=%v", qps_count)
+			qps_count = 0
+			start_tick = end_tick
+		}
 	}
 
 	for {

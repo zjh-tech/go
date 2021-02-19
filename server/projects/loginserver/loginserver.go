@@ -39,7 +39,7 @@ func (l *LoginServer) Init() bool {
 		return false
 	}
 
-	if err := frame.GRedisCfgMgr.Load("../config/redis_cfg.xml"); err != nil {
+	if err := frame.GRedisCfgMgr.Load("../config/serverconfig/redis_cfg.xml"); err != nil {
 		elog.Error(err)
 		return false
 	}

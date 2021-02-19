@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	elog.InitLog("./log", 0, nil, nil)
+	elog.Init("./log", 0, nil)
 	if err := config.GConfigMgr.LoadAllCfg("../../../bin/binary"); err != nil {
 		elog.Errorf("Error=%v", err)
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"projects/frame"
 	"projects/go-engine/elog"
 	"projects/go-engine/etimer"
 )
@@ -46,12 +47,12 @@ func (t *TestTimer) TestRepeatTimer() {
 }
 
 func main() {
-	elog.InitLog("./log", 0, nil, nil)
+	elog.Init("./log", 0, nil)
 
 	test := NewTestTimer()
 	test.TestRepeatTimer()
 
 	for {
-		etimer.GTimerMgr.Update()
+		etimer.GTimerMgr.Update(frame.TIMER_LOOP_COUNT)
 	}
 }
