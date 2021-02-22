@@ -45,7 +45,7 @@
 
 # QPS
 *测试环境:虚拟机,8核CPU...
-##  mysql: select 6500 insert 4100 
+##  mysql: select 0.65万 insert 0.41万
 ##  log:   12万
 ##  redis: 1.2万
 ##  tcp:   38万
