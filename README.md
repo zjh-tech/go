@@ -42,3 +42,10 @@
 *LogicServer: Server与Server接口
 # 工具:
 *打表工具: excel转protobuf 自动化代码生成,支持热更
+
+# QPS
+*测试环境:虚拟机,8核CPU...
+##  mysql: select 6500 insert 4100 
+##  log:   12万
+##  redis: 1.2万
+##  tcp:   38万
