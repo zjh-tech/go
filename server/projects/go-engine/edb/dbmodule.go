@@ -92,14 +92,14 @@ func (d *DBModule) Connect(dbIndex uint64, dbName string, ip string, port uint32
 // database_1  table_01  table_11 table_91
 // ...
 func (d *DBModule) HashDBIndex(uid uint64) uint64 {
-	elog.InfoAf("[DBModule] UID=%v Hash DBIndex=%v", uid, uid%d.dbConnMaxCount)
+	//elog.InfoAf("[DBModule] UID=%v Hash DBIndex=%v", uid, uid%d.dbConnMaxCount)
 	return uid % d.dbConnMaxCount
 }
 
 func (d *DBModule) HashTableIndex(uid uint64) uint64 {
 	dbIndex := d.HashDBIndex(uid)
 	dbTableIndex := uid % d.dbTableMaxCount
-	elog.InfoAf("[DBModule] UID=%v Hash TableIndex=%v", uid, dbTableIndex*10+dbIndex)
+	//elog.InfoAf("[DBModule] UID=%v Hash TableIndex=%v", uid, dbTableIndex*10+dbIndex)
 	return dbTableIndex*10 + dbIndex
 }
 

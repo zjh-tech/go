@@ -78,9 +78,9 @@ func escape_string(sql string) string {
 }
 
 func add_single_quotes_string(buf *bytes.Buffer, field string) {
-	buf.WriteString("`")
+	buf.WriteString("'")
 	buf.WriteString(field)
-	buf.WriteString("`")
+	buf.WriteString("'")
 }
 
 func as_sql_string(src interface{}) string {
@@ -183,7 +183,7 @@ func GetInsertSQL(tbl string, inserts *DBFieldPair) string {
 
 	buf.WriteString("INSERT INTO ")
 	buf.WriteString(tbl)
-	buf.WriteString("(")
+	buf.WriteString(" (")
 
 	if inserts != nil {
 		firstflag := true
@@ -196,7 +196,7 @@ func GetInsertSQL(tbl string, inserts *DBFieldPair) string {
 			buf.WriteString(k)
 			values = append(values, v)
 		}
-		buf.WriteString(" ) VALUES(")
+		buf.WriteString(" ) VALUES (")
 
 		firstflag = true
 		for i := 0; i < len(values); i++ {

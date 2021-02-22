@@ -77,6 +77,7 @@ func (l *Logger) StartWriterGoroutine() {
 				l.unInitCbFunc()
 			}
 		}()
+
 		exit := false
 		for {
 			if exit && len(l.buffEvents) == 0 && len(l.events) == 0 {

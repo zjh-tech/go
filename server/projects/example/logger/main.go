@@ -6,12 +6,13 @@ import (
 	"time"
 )
 
+//log 12万 QPS
 func main() {
 	elog.Init("./log", 0, nil)
 
 	start_tick := util.GetMillsecond()
 	qps_count := 0
-	loop_num := 500000
+	loop_num := 1000000
 	for i := 0; i < loop_num; i++ {
 		elog.Debug("DebugA")
 
@@ -22,6 +23,10 @@ func main() {
 			qps_count = 0
 			start_tick = end_tick
 		}
+	}
+
+	for i := 0; i < loop_num; i++ {
+		elog.DebugA("DebugA")
 	}
 
 	for {

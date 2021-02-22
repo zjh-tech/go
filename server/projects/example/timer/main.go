@@ -9,48 +9,41 @@ import (
 type TimerID int32
 
 const (
-	TestTestID TimerID = 1
+	TEST1_TIMER_ID TimerID = 1
+	TEST2_TIMER_ID TimerID = 2
 )
 
-type TestTimer struct {
+type Test struct {
 	timeRegister etimer.ITimerRegister
 }
 
-func NewTestTimer() *TestTimer {
-	t := &TestTimer{
+func NewTest() *Test {
+	t := &Test{
 		timeRegister: etimer.NewTimerRegister(),
 	}
 	return t
 }
 
-func (t *TestTimer) TestRepeatTimer() {
+func (t *Test) TestFunc() {
 	a := 1
 	b := 2
 
-	//t.timeRegister.AddRepeatTimer(uint32(TestTestID), 1000*60, "TestA", func(v ...interface{}) {
-	//	//tempA := v[0].(int)
-	//	//tempB := v[1].(int)
-	//	//elog.InfoAf("TestRepeatTimer a=%v  b=%v", tempA, tempB)
-	//}, []interface{}{a, b}, true)
-
-	t.timeRegister.AddRepeatTimer(uint32(TestTestID), 1000*90, "TestB", func(v ...interface{}) {
-		//tempA := v[0].(int)
-		//tempB := v[1].(int)
-		//elog.InfoAf("TestRepeatTimer a=%v  b=%v", tempA, tempB)
+	t.timeRegister.AddOnceTimer(uint32(TEST1_TIMER_ID), 1000*60, "Test1", func(v ...interface{}) {
+		tempA := v[0].(int)
+		tempB := v[1].(int)
+		elog.InfoAf("TEST1 Exec a=%v  b=%v", tempA, tempB)
 	}, []interface{}{a, b}, true)
 
-	//t.timeRegister.AddRepeatTimer(uint32(TestTestID), 1000*30, "TestC", func(v ...interface{}) {
-	//	//tempA := v[0].(int)
-	//	//tempB := v[1].(int)
-	//	//elog.InfoAf("TestRepeatTimer a=%v  b=%v", tempA, tempB)
-	//}, []interface{}{a, b}, true)
+	t.timeRegister.AddRepeatTimer(uint32(TEST2_TIMER_ID), 1000*30, "Test2", func(v ...interface{}) {
+		elog.InfoAf("TestID2 Exec")
+	}, []interface{}{}, true)
 }
 
 func main() {
 	elog.Init("./log", 0, nil)
 
-	test := NewTestTimer()
-	test.TestRepeatTimer()
+	test := NewTest()
+	test.TestFunc()
 
 	for {
 		etimer.GTimerMgr.Update(frame.TIMER_LOOP_COUNT)

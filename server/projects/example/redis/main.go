@@ -9,10 +9,13 @@ import (
 	"time"
 )
 
+//虚拟机 cpu : 8核
+//Redis Sync QPS 1.2万
+
 func main() {
 	elog.Init("./log", 0, nil)
 
-	if err := frame.GRedisCfgMgr.Load("../../../bin/serverconfig/redis_cfg.xml"); err != nil {
+	if err := frame.GRedisCfgMgr.Load("./serverconfig/redis_cfg.xml"); err != nil {
 		elog.Errorf("RedidCfgMgr Load Error=%v", err)
 		return
 	}
@@ -22,8 +25,6 @@ func main() {
 		return
 	}
 
-	//虚拟机 cpu : 8核
-	//Redis Get QPS Set QPS 1.2万
 	start_tick := util.GetMillsecond()
 	qps_count := 0
 	loop_num := 500000

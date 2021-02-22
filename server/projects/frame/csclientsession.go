@@ -45,6 +45,7 @@ func NewCSClientSession(handler ICSClientMsgHandler) *CSClientSession {
 	}
 
 	sess.SetListenType()
+	sess.Session.SessionOnHandler = sess
 	return sess
 }
 
@@ -162,14 +163,14 @@ func (c *CSClientSessionMgr) Connect(addr string, handler ICSClientMsgHandler, c
 	enet.GNet.Connect(addr, sess)
 }
 
-func (c *CSClientSessionMgr) Listen(addr string, handler ICSClientMsgHandler, coder inet.ICoder) bool {
+func (c *CSClientSessionMgr) Listen(addr string, handler ICSClientMsgHandler, coder inet.ICoder, listenMaxCount int) bool {
 	if coder == nil {
 		coder = NewCoder()
 	}
 
 	c.coder = coder
 	c.handler = handler
-	return enet.GNet.Listen(addr, c, GServerCfg.C2SListenMaxCount)
+	return enet.GNet.Listen(addr, c, listenMaxCount)
 }
 
 var GCSClientSessionMgr *CSClientSessionMgr

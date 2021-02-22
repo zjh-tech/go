@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"projects/frame"
 	"projects/go-engine/ehttp"
 	"projects/go-engine/elog"
@@ -45,7 +46,7 @@ func (g *GatewayServer) Init() bool {
 			frame.GServer.Quit()
 			return
 		}
-		if frame.GCSClientSessionMgr.Listen(frame.GServerCfg.C2SInterListen, GClientMsgHandler, nil) == false {
+		if frame.GCSClientSessionMgr.Listen(frame.GServerCfg.C2SInterListen, GClientMsgHandler, nil, math.MaxUint16) == false {
 			elog.Error("GatewayServer C2SInterListen Error")
 			frame.GServer.Quit()
 			return
