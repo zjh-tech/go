@@ -14,15 +14,6 @@ const (
 	ROBOT_CLIENT_TYPE uint32 = 1000
 )
 
-const (
-	TS_RANK_RETISTER_SERVER_TYPE uint32 = 1
-	TS_RANK_BALANCE_SERVER_TYPE  uint32 = 2
-	TS_RANK_GATEWAY_SERVER_TYPE  uint32 = 3
-	TS_RANK_RANK_SERVER_TYPE     uint32 = 4
-
-	TS_RANK_ROBOT_TYPE uint32 = 1001
-)
-
 type TS_RANK_SERVICE_TYPE uint32
 
 //var ServerNameArrays = [...]string{

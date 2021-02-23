@@ -1,6 +1,6 @@
 #!/bin/sh
 
-LIST='config logger mysql redis tcpclient tcpserver timer'
+LIST='config logger mysql redis tcpclient tcpserver timer rankrobot'
 
 for example in $LIST
 do 

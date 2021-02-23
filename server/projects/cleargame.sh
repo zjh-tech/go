@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SERVERLIST='registryserver loginserver gatewayserver centerserver hallserver matchserver battleserver dbserver robot'
+SERVERLIST='registryserver loginserver gatewayserver centerserver hallserver matchserver battleserver dbserver rankserver robot'
 
 bin="$GOBIN"
 

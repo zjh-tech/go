@@ -276,7 +276,7 @@ func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) strin
 	var buf bytes.Buffer
 	buf.WriteString("INSERT INTO ")
 	buf.WriteString(tbl)
-	buf.WriteString("( ")
+	buf.WriteString(" ( ")
 
 	// upate list enum.
 	if updates != nil {
@@ -328,6 +328,9 @@ func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) strin
 			buf.WriteString(v)
 		}
 	}
+
+	buf.WriteString(";")
+
 	return buf.String()
 }
 

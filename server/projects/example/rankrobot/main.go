@@ -8,41 +8,40 @@ import (
 	"projects/go-engine/enet"
 	"projects/go-engine/etimer"
 	"projects/pb"
-	"projects/rank/tsrankclient"
+	"projects/sdk"
 	"projects/util"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 )
 
-type TsRobot struct {
+type RankRobot struct {
 	timerRegister etimer.ITimerRegister
 }
 
-func (t *TsRobot) Init() bool {
-	t.timerRegister = etimer.NewTimerRegister()
+func (r *RankRobot) Init() bool {
+	r.timerRegister = etimer.NewTimerRegister()
 
-	//Log
-	elog.Init("./log", 0, nil)
-	elog.Info("Server Log System Init Success")
+	elog.Init("./log", 1, nil)
+	elog.Info("Log System Init Success")
 
 	rand.Seed(time.Now().UnixNano())
 
 	if !enet.GNet.Init() {
-		elog.Error("TsRobot Net Init Error")
+		elog.Error("Net Init Error")
 		return false
 	}
-	elog.Info("TsRobot Net Init Success")
+	elog.Info("Net Init Success")
 
-	tsrankclient.GTsRankClient.Init("192.168.92.143:20000", "123456")
+	sdk.GRankClient.Init("127.0.0.1:3001", "123456")
 
-	elog.Info("TsRobot Init Success")
-	t.AddSendRankReqTimer()
+	elog.Info("Init Success")
 
+	r.AddSendRankReqTimer()
 	return true
 }
 
-func (r *TsRobot) Run() {
+func (r *RankRobot) Run() {
 	busy := false
 	net_module := enet.GNet
 	http_net_module := ehttp.GHttpNet
@@ -68,7 +67,7 @@ func (r *TsRobot) Run() {
 	}
 }
 
-func (t *TsRobot) UnInit() {
+func (t *RankRobot) UnInit() {
 	elog.UnInit(nil)
 }
 
@@ -83,9 +82,9 @@ const (
 var GPlayerID uint64
 var GSortFiled2 int64
 
-func (t *TsRobot) AddSendRankReqTimer() {
+func (t *RankRobot) AddSendRankReqTimer() {
 	t.timerRegister.AddRepeatTimer(SEND_RANK_REQ_TIME_ID, SS_CLIENT_HEART_TIME_DELAY, "TsRankClient-SendRankReq", func(v ...interface{}) {
-		tid := uint32(1)
+		tid := uint32(0)
 		rankItem := &pb.RankItem{}
 		GPlayerID++
 		rankItem.PlayerId = GPlayerID
@@ -103,10 +102,10 @@ func (t *TsRobot) AddSendRankReqTimer() {
 		}
 
 		elog.InfoAf("RankReq Send PlayerId=%v SortFiled1=%v", GPlayerID, sortFiled1)
-		tsrankclient.GTsRankClient.SendUpdateRankReq(tid, rankItem, func(attach ...interface{}) {
+		sdk.GRankClient.SendUpdateRankReq(tid, rankItem, func(attach ...interface{}) {
 			tempTid := attach[0].(uint32)
 			ackDatas := attach[1].([]byte)
-			ack := pb.Ts2CUpdateRankAck{}
+			ack := pb.R2CUpdateRankAck{}
 			unmarshalErr := proto.Unmarshal(ackDatas, &ack)
 			if unmarshalErr != nil {
 				return
@@ -118,4 +117,13 @@ func (t *TsRobot) AddSendRankReqTimer() {
 			elog.InfoAf("RankReq CallBack Tid=%v PlayerId=%v SortFiled1=%v ack=%+v", tempTid, tempPlayerID, tempSortFiled1, ack)
 		}, []interface{}{GPlayerID, sortFiled1})
 	}, []interface{}{}, true)
+}
+
+func main() {
+	var rank RankRobot
+	if rank.Init() {
+		rank.Run()
+	}
+
+	rank.UnInit()
 }

@@ -9,37 +9,34 @@ import (
 	"projects/go-engine/enet"
 	"projects/go-engine/etimer"
 	"projects/pb"
-	"projects/rank/tscommon"
 	"projects/util"
 	"time"
 )
 
 const (
-	TS_DB_DEFAULT_UID uint64 = 0
+	DB_DEFAULT_UID uint64 = 0
 )
 
-type TsRankServer struct {
+type RankServer struct {
 	frame.Server
 }
 
-func (t *TsRankServer) Init() bool {
-	frame.GSSServerSessionMgr.SetLogicServerFactory(GLogicServerFactory)
-
-	if !t.Server.Init() {
+func (r *RankServer) Init() bool {
+	if !r.Server.Init() {
 		return false
 	}
 
 	if !enet.GNet.Init() {
-		elog.Error("TsRankServer Net Init Error")
+		elog.Error("RankServer Net Init Error")
 		return false
 	}
-	elog.Info("TsRankServer Net Init Success")
+	elog.Info("RankServer Net Init Success")
 
-	if rankCfg, err := tscommon.ReadRankCfg("../config/rank_config.xml"); err != nil {
-		elog.Errorf("TsRankServer Load RankConfig xml Error=%v", err)
+	if rankCfg, err := ReadRankCfg("./config/rank_config.xml"); err != nil {
+		elog.Errorf("RankServer Load RankConfig xml Error=%v", err)
 		return false
 	} else {
-		tscommon.GRankCfg = rankCfg
+		GRankCfg = rankCfg
 	}
 
 	if err := frame.GDatabaseCfgMgr.Load("./db_cfg.xml"); err != nil {
@@ -52,21 +49,19 @@ func (t *TsRankServer) Init() bool {
 		return false
 	}
 
-	tids := tscommon.GRankCfg.GetTIds(frame.GServer.GetLocalServerID())
+	tids := GRankCfg.GetTIds()
 	GRankMgr.Init(tids)
-	t.LoadRankByIndex(0, tids)
+	r.LoadRankByIndex(0, tids)
 
-	elog.Info("TsRankServer Init Success")
+	frame.GSSClientSessionMgr.SSClientListen(frame.GServerCfg.RankServerAddr, NewRankClient(), nil)
+
+	elog.Info("RankServer Init Success")
 	return true
 }
 
-func (t *TsRankServer) LoadRankByIndex(index int, tids []uint32) {
+func (r *RankServer) LoadRankByIndex(index int, tids []uint32) {
 	if len(tids) == index {
-		if frame.GServiceDiscoveryHttpClient.Init(frame.GServerCfg.SDClientUrl, t.GetLocalServerID(), t.GetLocalToken(), nil) == false {
-			elog.Error("TsRankServer SDClient Error")
-			frame.GServer.Quit()
-			return
-		}
+		elog.Error("RankServer LoadRankByIndex Ok")
 		return
 	}
 
@@ -130,13 +125,13 @@ func (t *TsRankServer) LoadRankByIndex(index int, tids []uint32) {
 				rank.Update(rankItem, true)
 			}
 			paras.index++
-			t.LoadRankByIndex(paras.index, paras.tids)
+			r.LoadRankByIndex(paras.index, paras.tids)
 			return
 		}
-	}, []interface{}{cmdParas}, TS_DB_DEFAULT_UID)
+	}, []interface{}{cmdParas}, DB_DEFAULT_UID)
 }
 
-func (t *TsRankServer) Run() {
+func (t *RankServer) Run() {
 	busy := false
 	net_module := enet.GNet
 	http_net_module := ehttp.GHttpNet

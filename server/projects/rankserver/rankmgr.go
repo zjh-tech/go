@@ -3,13 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"projects/rank/tscommon"
 )
 
 type RankMgr struct {
 	globalRanks map[uint32]*Rank //RankAtrr.Id作为实例ID
-
-	//areaRanks   map[uint64]*Rank //区服(GameId-area-group)作为实例ID
 }
 
 func NewRankMgr() *RankMgr {
@@ -27,11 +24,11 @@ func (r *RankMgr) Init(tids []uint32) {
 }
 
 func (r *RankMgr) FindGlobalRank(tid uint32) (*Rank, error) {
-	if tscommon.GRankCfg == nil {
+	if GRankCfg == nil {
 		return nil, errors.New("[RankMgr] FindGlobalRank GRankCfg Error")
 	}
 
-	_, ok := tscommon.GRankCfg.RankAtrrMap[tid]
+	_, ok := GRankCfg.RankAtrrMap[tid]
 	if !ok {
 		errStr := fmt.Sprintf("[RankMgr] FindGlobalRank Tid=%v Error", tid)
 		return nil, errors.New(errStr)

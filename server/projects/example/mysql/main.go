@@ -18,8 +18,6 @@ import (
 //KEY (`username`)
 //) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-//Select 6500
-//Insert 4100
 type Server struct {
 }
 

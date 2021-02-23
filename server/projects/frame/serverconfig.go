@@ -11,7 +11,7 @@ type ServerCfg struct {
 	serverType  uint32
 	ServerId    uint64
 	Token       string //ServiceDiscovery的Token
-	//日志
+	//Log
 	LogDir   string
 	LogLevel int
 
@@ -23,15 +23,18 @@ type ServerCfg struct {
 	SDClientUrl string
 	SDServerUrl string
 
-	//s-s
+	//S-S
 	C2SInterListen    string
 	C2SOuterListen    string
 	C2SListenMaxCount int
 
-	//c-s
+	//C-S
 	C2SHttpsUrl  string
 	C2SHttpsCert string
 	C2SHttpsKey  string
+
+	//Rank
+	RankServerAddr string
 }
 
 var GServerCfg *ServerCfg
@@ -106,6 +109,11 @@ func ReadServerCfg(path string) error {
 	sdserverurlElem := cfgRoot.FindElement("sdserver_url")
 	if sdserverurlElem != nil {
 		GServerCfg.SDServerUrl = sdserverurlElem.Text()
+	}
+
+	rankServerAddrElem := cfgRoot.FindElement("rankserver_addr")
+	if rankServerAddrElem != nil {
+		GServerCfg.RankServerAddr = rankServerAddrElem.Text()
 	}
 
 	return nil

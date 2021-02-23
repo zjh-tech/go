@@ -13,9 +13,7 @@ It is generated from these files:
 	ss_base.proto
 	ss_logic.proto
 	db.proto
-	ts_common.proto
-	ts_server.proto
-	ts_client.proto
+	rank_client.proto
 
 It has these top-level messages:
 	C2SClientSessionPing
@@ -71,24 +69,19 @@ It has these top-level messages:
 	S2SHglKickPlayerAck
 	S2SGhReconnectGameReq
 	DbBinary
+	C2RRankVerifyReq
+	R2CRankVerifyAck
+	C2RTranferMsg
+	R2CTranferMsg
 	RankItem
-	Ts2TsGatewayInfoNtf
-	Ts2TsGrTranferMsg
-	Ts2TsRgTranferMsg
-	C2TsSelectTsgateReq
-	Ts2CSelectTsgateAck
-	C2TsTsgateVerifyReq
-	Ts2CTsgateVerifyAck
-	C2TsCgTranferMsg
-	Ts2CGcTranferMsg
-	C2TsUpdateRankReq
-	Ts2CUpdateRankAck
-	C2TsQueryRankReq
-	Ts2CQueryRankAck
-	C2TsClearAllReq
-	Ts2CClearAllAck
-	C2TsClearPlayerReq
-	Ts2CClearPlayerAck
+	C2RUpdateRankReq
+	R2CUpdateRankAck
+	C2RQueryRankReq
+	R2CQueryRankAck
+	C2RClearAllReq
+	R2CClearAllAck
+	C2RClearPlayerReq
+	R2CClearPlayerAck
 */
 package pb
 

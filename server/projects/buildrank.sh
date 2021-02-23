@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SERVERLIST='tsbalanceserver tsgateserver tsrankserver tsrobot'
+SERVERLIST='rankserver'
 
 ProjectsPath=`pwd`
 echo ""
@@ -9,18 +9,18 @@ bin="$GOBIN"
 
 for serv in $SERVERLIST
 do 
-	cd $ProjectsPath/rank/$serv
+	cd $ProjectsPath/rankserver
 	if [  -n "$1" ]; then
-		echo "clean rank/$serv  ..."
+		echo "clean rankserver  ..."
 		go clean 
 	fi
 	
-	echo "start build rank/$serv  ..."
+	echo "start build rankserver  ..."
 	#go build
 	go build -gcflags '-l -N'
-	echo "build rank/$serv ok ..."
+	echo "build rankserver ok ..."
 	
-	mv -f $serv $GOBIN/rank/$serv
+	mv -f $serv $GOBIN/rankserver
 	echo ""
 done 
 

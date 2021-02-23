@@ -1,4 +1,4 @@
-package tscommon
+package main
 
 import (
 	"errors"
@@ -27,7 +27,7 @@ func NewRankCfg() *RankCfg {
 	}
 }
 
-func (r *RankCfg) GetTIds(serverId uint64) []uint32 {
+func (r *RankCfg) GetTIds() []uint32 {
 	tids := make([]uint32, 0)
 	for tid, _ := range r.RankAtrrMap {
 		tids = append(tids, tid)

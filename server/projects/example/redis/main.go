@@ -9,9 +9,6 @@ import (
 	"time"
 )
 
-//虚拟机 cpu : 8核
-//Redis Sync QPS 1.2万
-
 func main() {
 	elog.Init("./log", 0, nil)
 

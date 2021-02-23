@@ -1,7 +1,7 @@
 package main
 
 func main() {
-	var server TsGatewayServer
+	var server RankServer
 	if server.Init() {
 		server.Run()
 	}

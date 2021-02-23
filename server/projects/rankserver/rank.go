@@ -7,7 +7,6 @@ import (
 	"projects/go-engine/elog"
 	"projects/go-engine/etimer"
 	"projects/pb"
-	"projects/rank/tscommon"
 	skip_list "projects/thirds/skiplist"
 )
 
@@ -107,7 +106,7 @@ func (r *Rank) SetAllDelFlag(flag bool) {
 }
 
 func (r *Rank) EnsureRankListSize() {
-	cfg, ok := tscommon.GRankCfg.RankAtrrMap[r.tid]
+	cfg, ok := GRankCfg.RankAtrrMap[r.tid]
 	if ok {
 		if r.rankList.Size() > int(cfg.RankSize) {
 			delSize := r.rankList.Size() - int(cfg.RankSize)
@@ -139,7 +138,7 @@ func (r *Rank) Update(item *pb.RankItem, loadflag bool) {
 		r.rankList.Erase(oldRankSortKey)
 	}
 
-	cfg, cfgOk := tscommon.GRankCfg.RankAtrrMap[r.tid]
+	cfg, cfgOk := GRankCfg.RankAtrrMap[r.tid]
 	if !cfgOk {
 		return
 	}
@@ -207,7 +206,7 @@ func (r *Rank) AddDbItem(flag uint32, Player_id uint64, rankItem *pb.RankItem) {
 	r.dbRankItems = append(r.dbRankItems, dbRankItem)
 }
 
-func (r *Rank) FillRankItems(topN uint32, ack *pb.Ts2CQueryRankAck) {
+func (r *Rank) FillRankItems(topN uint32, ack *pb.R2CQueryRankAck) {
 	if ack == nil {
 		return
 	}
@@ -282,15 +281,27 @@ func SaveRank(allDelFlag bool, tid uint32, dbItems []*DBRankItem) {
 					elog.ErrorAf("[Rank] Delete Tid=%v PlayerId=%v RankItem=%+v Error=%v", paras.tid, dbItem.PlayerID, dbItem.RankItem, delErr)
 				}
 			} else if dbItem.Flag == DB_ADD_OR_UDP_RECORD {
-				insertOrUpdSql := frame.BuildInsertOrUpdateSQL(tableName, map[string]interface{}{
-					"Playerid":    dbItem.PlayerID,
-					"sortfield1":  dbItem.RankItem.SortField1,
-					"sortfield2":  dbItem.RankItem.SortField2,
-					"sortfield3":  dbItem.RankItem.SortField3,
-					"sortfield4":  dbItem.RankItem.SortField4,
-					"sortfield5":  dbItem.RankItem.SortField5,
-					"attachdatas": dbItem.RankItem.AttachDatas,
-				}, []string{"Playerid"})
+				var insertOrUpdSql string
+				if dbItem.RankItem.AttachDatas != nil {
+					insertOrUpdSql = frame.BuildInsertOrUpdateSQL(tableName, map[string]interface{}{
+						"Playerid":    dbItem.PlayerID,
+						"sortfield1":  dbItem.RankItem.SortField1,
+						"sortfield2":  dbItem.RankItem.SortField2,
+						"sortfield3":  dbItem.RankItem.SortField3,
+						"sortfield4":  dbItem.RankItem.SortField4,
+						"sortfield5":  dbItem.RankItem.SortField5,
+						"attachdatas": dbItem.RankItem.AttachDatas,
+					}, []string{"Playerid"})
+				} else {
+					insertOrUpdSql = frame.BuildInsertOrUpdateSQL(tableName, map[string]interface{}{
+						"Playerid":   dbItem.PlayerID,
+						"sortfield1": dbItem.RankItem.SortField1,
+						"sortfield2": dbItem.RankItem.SortField2,
+						"sortfield3": dbItem.RankItem.SortField3,
+						"sortfield4": dbItem.RankItem.SortField4,
+						"sortfield5": dbItem.RankItem.SortField5,
+					}, []string{"Playerid"})
+				}
 
 				_, insertOrUpdErr := conn.QueryWithoutResult(insertOrUpdSql)
 				if insertOrUpdErr != nil {
@@ -302,5 +313,5 @@ func SaveRank(allDelFlag bool, tid uint32, dbItems []*DBRankItem) {
 		return nil, edb.DB_EXEC_FAIL, nil
 	}, func(recordSet edb.IMysqlRecordSet, attach []interface{}, errorCode int32, err error) {
 
-	}, []interface{}{cmdParas}, TS_DB_DEFAULT_UID)
+	}, []interface{}{cmdParas}, DB_DEFAULT_UID)
 }

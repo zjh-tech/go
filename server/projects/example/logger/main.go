@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-//log 12万 QPS
 func main() {
 	elog.Init("./log", 0, nil)
 
