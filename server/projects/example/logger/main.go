@@ -9,24 +9,16 @@ import (
 func main() {
 	elog.Init("./log", 0, nil)
 
+	loop_num := int64(1000000)
+
 	start_tick := util.GetMillsecond()
-	qps_count := 0
-	loop_num := 1000000
-	for i := 0; i < loop_num; i++ {
-		elog.Debug("DebugA")
-
-		qps_count++
-		end_tick := util.GetMillsecond()
-		if (end_tick - start_tick) >= 1000 {
-			elog.InfoAf("Sync Qps=%v", qps_count)
-			qps_count = 0
-			start_tick = end_tick
-		}
+	for i := int64(0); i < loop_num; i++ {
+		elog.Debugf("This message is 116 characters long including the info that comes before it. %v", i)
 	}
+	end_tick := util.GetMillsecond()
+	elog.InfoAf("Sync Qps=%v", loop_num*1000/(end_tick-start_tick))
 
-	for i := 0; i < loop_num; i++ {
-		elog.DebugA("DebugA")
-	}
+	//sync 和async 差不多
 
 	for {
 		time.Sleep(1 * time.Second)

@@ -33,33 +33,41 @@ type LogEvent struct {
 
 const LogBuffEventSize = 10000
 
+func get_mill_second() int64 {
+	return time.Now().UnixNano() / 1e6
+}
+
 type Logger struct {
-	out           io.Writer //os.Stderr -> File
-	level         int
-	fileDirPrefix string
-	events        chan *LogEvent
-	buffEvents    chan *LogEvent
-	exitChan      chan struct{}
-	lastTime      time.Time
-	file          *os.File
-	buf           bytes.Buffer
-	callDepth     int
-	closeFlag     bool
-	initCbFunc    FuncType
-	unInitCbFunc  FuncType
+	out                io.Writer //os.Stderr -> File
+	level              int
+	fileDirPrefix      string
+	events             chan *LogEvent
+	buffEvents         chan *LogEvent
+	exitChan           chan struct{}
+	lastTime           time.Time
+	file               *os.File
+	buf                bytes.Buffer
+	callDepth          int
+	closeFlag          bool
+	initCbFunc         FuncType
+	unInitCbFunc       FuncType
+	asyncFlushMaxTick  int64
+	nextAsyncFlushTick int64
 }
 
 func NewLogger(out io.Writer, fileDir string, level int) *Logger {
 	logger := &Logger{
-		out:           out,
-		level:         level,
-		fileDirPrefix: fileDir,
-		events:        make(chan *LogEvent),
-		buffEvents:    make(chan *LogEvent, LogBuffEventSize),
-		exitChan:      make(chan struct{}),
-		callDepth:     2,
-		closeFlag:     false,
+		out:               out,
+		level:             level,
+		fileDirPrefix:     fileDir,
+		events:            make(chan *LogEvent),
+		buffEvents:        make(chan *LogEvent, LogBuffEventSize),
+		exitChan:          make(chan struct{}),
+		callDepth:         2,
+		closeFlag:         false,
+		asyncFlushMaxTick: 100,
 	}
+
 	return logger
 }
 
@@ -82,13 +90,15 @@ func (l *Logger) StartWriterGoroutine() {
 		for {
 			if exit && len(l.buffEvents) == 0 && len(l.events) == 0 {
 				//ensure all log write file
+				l.out.Write(l.buf.Bytes())
 				return
 			}
 			select {
 			case buffEvent := <-l.buffEvents:
-				l.outPut(buffEvent.Level, buffEvent.Content, buffEvent.File, buffEvent.Line)
+				l.outPut(buffEvent.Level, buffEvent.Content, buffEvent.File, buffEvent.Line, true)
+
 			case event := <-l.events:
-				l.outPut(event.Level, event.Content, event.File, event.Line)
+				l.outPut(event.Level, event.Content, event.File, event.Line, false)
 			case <-l.exitChan:
 				l.exitChan = nil
 				exit = true
@@ -140,13 +150,12 @@ func (l *Logger) AddEvent(level int, content string, async bool) {
 	}
 }
 
-func (l *Logger) outPut(level int, content string, file string, line int) error {
+func (l *Logger) outPut(level int, content string, file string, line int, asyncFlag bool) {
 	//time zone
 	now := time.Now()
 	l.EnsureFileExist(now)
 	l.lastTime = now
 
-	l.buf.Reset()
 	//add time
 	nowStr := time.Now().Format("2006-01-02 15:04:05")
 	//add file line
@@ -157,9 +166,17 @@ func (l *Logger) outPut(level int, content string, file string, line int) error 
 		l.buf.WriteByte('\n')
 	}
 
-	_, err := l.out.Write(l.buf.Bytes())
+	if asyncFlag {
+		if l.nextAsyncFlushTick < get_mill_second() {
+			l.out.Write(l.buf.Bytes())
+			l.buf.Reset()
+		}
+	} else {
+		l.out.Write(l.buf.Bytes())
+		l.buf.Reset()
+	}
+
 	l.outPutConsole(string(l.buf.Bytes()))
-	return err
 }
 
 func (l *Logger) EnsureFileExist(now time.Time) {
