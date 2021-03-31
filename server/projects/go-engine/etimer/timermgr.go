@@ -15,78 +15,78 @@ func GetMillSecond() int64 {
 }
 
 type TimerMgr struct {
-	slotList    [MaxSlotSize]*list.List
-	curSlot     uint64
-	lastTick    int64
-	timeWheelId uint64
+	uid       uint64
+	slot_list [MaxSlotSize]*list.List
+	cur_slot  uint64
+	last_tick int64
 }
 
-func NewTimerMgr() *TimerMgr {
+func new_timer_mgr() *TimerMgr {
 	mgr := &TimerMgr{
-		curSlot:     0,
-		timeWheelId: 0,
+		cur_slot: 0,
+		uid:      0,
 	}
 
 	for i := uint64(0); i < MaxSlotSize; i++ {
-		mgr.slotList[i] = list.New()
+		mgr.slot_list[i] = list.New()
 	}
 
-	mgr.lastTick = GetMillSecond()
+	mgr.last_tick = GetMillSecond()
 	return mgr
 }
 
 func (t *TimerMgr) Update(loop_count int) bool {
-	curMillSecond := GetMillSecond()
-	if curMillSecond < t.lastTick {
+	cur_mill_second := GetMillSecond()
+	if cur_mill_second < t.last_tick {
 		elog.ErrorA("[Timer] Time Rollback")
 		return false
 	}
 
 	busy := false
-	delta := curMillSecond - t.lastTick
+	delta := cur_mill_second - t.last_tick
 	if delta > int64(loop_count) {
 		delta = int64(loop_count)
 		elog.WarnA("[Timer] Time Forward")
 	}
-	t.lastTick += delta
+	t.last_tick += delta
 
 	for i := int64(0); i < delta; i++ {
-		t.curSlot++
-		t.curSlot = t.curSlot % MaxSlotSize
+		t.cur_slot++
+		t.cur_slot = t.cur_slot % MaxSlotSize
 
-		slotList := t.slotList[t.curSlot]
+		slot_list := t.slot_list[t.cur_slot]
 		var next *list.Element
-		repeatList := list.New()
-		for e := slotList.Front(); e != nil; {
+		repeat_list := list.New()
+		for e := slot_list.Front(); e != nil; {
 			next = e.Next()
 			timer := e.Value.(*Timer)
-			if timer.State != TimerRunningState {
+			if timer.state != TimerRunningState {
 				t.ReleaseTimer(timer)
-				slotList.Remove(e)
+				slot_list.Remove(e)
 				e = next
 				continue
 			}
 
-			timer.Rotation--
-			if timer.Rotation < 0 {
+			timer.rotation--
+			if timer.rotation < 0 {
 				busy = true
-				elog.DebugAf("[Timer] Trigger %v id %v-%v-%v", timer.Desc, timer.TimeWheelId, timer.Id, timer.RegisterId)
-				slotList.Remove(e)
+				elog.DebugAf("[Timer] Trigger %v id %v-%v-%v", timer.desc, timer.uid, timer.register_eid, timer.register_uid)
+				slot_list.Remove(e)
 				timer.Call()
-				if timer.Repeat && timer.State == TimerRunningState {
-					repeatList.PushBack(timer) //先加入repeatList,防止此循环又被遍历到
+				if timer.repeat && timer.state == TimerRunningState {
+					repeat_list.PushBack(timer) //先加入repeatList,防止此循环又被遍历到
 				} else {
 					t.ReleaseTimer(timer)
 				}
 			} else {
-				elog.DebugAf("[Timer] %v id %v-%v-%v remain rotation = %v %v", timer.Desc, timer.TimeWheelId, timer.Id, timer.RegisterId, timer.Rotation+1, MaxSlotSize)
+				elog.DebugAf("[Timer] %v id %v-%v-%v remain rotation = %v %v", timer.desc, timer.uid, timer.register_eid, timer.register_uid, timer.rotation+1, MaxSlotSize)
 			}
 
 			e = next
 		}
 
-		if repeatList.Len() != 0 {
-			for e := repeatList.Front(); e != nil; e = e.Next() {
+		if repeat_list.Len() != 0 {
+			for e := repeat_list.Front(); e != nil; e = e.Next() {
 				timer := e.Value.(*Timer)
 				//不考虑timer.Call花费的时间，不然会有逻辑顺序问题
 				t.AddSlotTimer(timer)
@@ -100,9 +100,9 @@ func (t *TimerMgr) UnInit() {
 	elog.Info("[Timer] Stop")
 }
 
-func (t *TimerMgr) CreateSlotTimer(id uint32, registerId uint64, delay uint64, desc string, repeat bool, cb FuncType, args ArgType, r *TimerRegister) *Timer {
-	t.timeWheelId++
-	timer := NewTimer(id, registerId, t.timeWheelId, delay, desc, repeat, cb, args, r)
+func (t *TimerMgr) CreateSlotTimer(register_eid uint32, register_uid uint64, delay uint64, desc string, repeat bool, cb FuncType, args ArgType, r *TimerRegister) *Timer {
+	t.uid++
+	timer := new_timer(register_eid, register_uid, t.uid, delay, desc, repeat, cb, args, r)
 	return timer
 }
 
@@ -111,43 +111,43 @@ func (t *TimerMgr) AddSlotTimer(timer *Timer) {
 		return
 	}
 
-	timer.State = TimerRunningState
-	timer.Rotation = int64(timer.Delay / MaxSlotSize)
-	timer.Slot = (t.curSlot + timer.Delay%MaxSlotSize) % MaxSlotSize
-	tempRotation := timer.Rotation
-	if timer.Slot == t.curSlot && timer.Rotation > 0 {
-		timer.Rotation--
+	timer.state = TimerRunningState
+	timer.rotation = int64(timer.delay / MaxSlotSize)
+	timer.slot = (t.cur_slot + timer.delay%MaxSlotSize) % MaxSlotSize
+	tempRotation := timer.rotation
+	if timer.slot == t.cur_slot && timer.rotation > 0 {
+		timer.rotation--
 	}
-	t.slotList[timer.Slot].PushBack(timer)
-	elog.DebugAf("[Timer] AddSlotTimer %v id %v-%v-%v delay=%v,curslot=%v,slot=%v,rotation=%v", timer.Desc, timer.TimeWheelId, timer.Id, timer.RegisterId, timer.Delay, t.curSlot, timer.Slot, tempRotation)
+	t.slot_list[timer.slot].PushBack(timer)
+	elog.DebugAf("[Timer] AddSlotTimer %v id %v-%v-%v delay=%v,curslot=%v,slot=%v,rotation=%v", timer.desc, timer.uid, timer.register_eid, timer.register_uid, timer.delay, t.cur_slot, timer.slot, tempRotation)
 }
 
 func (t *TimerMgr) ReleaseTimer(timer *Timer) {
 	if timer != nil {
-		if timer.State == TimerRunningState {
-			elog.DebugAf("[Timer] ReleaseTimer %v id %v-%v-%v Running State", timer.Desc, timer.TimeWheelId, timer.Id, timer.RegisterId)
-		} else if timer.State == TimerKilledState {
-			elog.DebugAf("[Timer] ReleaseTimer %v id %v-%v-%v Killed State", timer.Desc, timer.TimeWheelId, timer.Id, timer.RegisterId)
+		if timer.state == TimerRunningState {
+			elog.DebugAf("[Timer] ReleaseTimer %v id %v-%v-%v Running State", timer.desc, timer.uid, timer.register_eid, timer.register_uid)
+		} else if timer.state == TimerKilledState {
+			elog.DebugAf("[Timer] ReleaseTimer %v id %v-%v-%v Killed State", timer.desc, timer.uid, timer.register_eid, timer.register_uid)
 		} else {
-			elog.DebugAf("[Timer] ReleaseTimer %v id %v-%v-%v Unknow State", timer.Desc, timer.TimeWheelId, timer.Id, timer.RegisterId)
+			elog.DebugAf("[Timer] ReleaseTimer %v id %v-%v-%v Unknow State", timer.desc, timer.uid, timer.register_eid, timer.register_uid)
 		}
 
-		timer.Cb = nil
-		timer.Args = nil
+		timer.cb = nil
+		timer.args = nil
 
-		if timer.Register != nil {
-			timer.Register.RemoveTimer(timer)
-			timer.Register = nil
+		if timer.register != nil {
+			timer.register.RemoveTimer(timer)
+			timer.register = nil
 		}
 	}
 }
 
 func (t *TimerMgr) GetCurSlot() uint64 {
-	return t.curSlot
+	return t.cur_slot
 }
 
 var GTimerMgr *TimerMgr
 
 func init() {
-	GTimerMgr = NewTimerMgr()
+	GTimerMgr = new_timer_mgr()
 }

@@ -20,24 +20,24 @@ type SessionOnHandler interface {
 
 type Session struct {
 	SessionOnHandler
-	conn     inet.IConnection
-	sessID   uint64
-	attach   interface{}
-	coder    inet.ICoder
-	sessType inet.SessionType
-	factory  inet.ISessionFactory
+	conn      inet.IConnection
+	sess_id   uint64
+	attach    interface{}
+	coder     inet.ICoder
+	sess_type inet.SessionType
+	factory   inet.ISessionFactory
 }
 
 func (s *Session) SetConnection(conn inet.IConnection) {
 	s.conn = conn
 }
 
-func (s *Session) SetSessID(sessID uint64) {
-	s.sessID = sessID
+func (s *Session) SetSessID(sess_id uint64) {
+	s.sess_id = sess_id
 }
 
 func (s *Session) GetSessID() uint64 {
-	return s.sessID
+	return s.sess_id
 }
 
 func (s *Session) GetAttach() interface{} {
@@ -57,7 +57,7 @@ func (s *Session) SetCoder(coder inet.ICoder) {
 }
 
 func (s *Session) IsListenType() bool {
-	if s.sessType == inet.SESS_LISTEN_TYPE {
+	if s.sess_type == inet.SESS_LISTEN_TYPE {
 		return true
 	}
 
@@ -65,7 +65,7 @@ func (s *Session) IsListenType() bool {
 }
 
 func (s *Session) IsConnectType() bool {
-	if s.sessType == inet.SESS_CONNECT_TYPE {
+	if s.sess_type == inet.SESS_CONNECT_TYPE {
 		return true
 	}
 
@@ -73,11 +73,11 @@ func (s *Session) IsConnectType() bool {
 }
 
 func (s *Session) SetConnectType() {
-	s.sessType = inet.SESS_CONNECT_TYPE
+	s.sess_type = inet.SESS_CONNECT_TYPE
 }
 
 func (s *Session) SetListenType() {
-	s.sessType = inet.SESS_LISTEN_TYPE
+	s.sess_type = inet.SESS_LISTEN_TYPE
 }
 
 func (s *Session) SetSessionFactory(factory inet.ISessionFactory) {

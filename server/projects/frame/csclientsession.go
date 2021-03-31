@@ -21,7 +21,7 @@ type ICSClientMsgHandler interface {
 type CSClientSession struct {
 	Session
 	handler              ICSClientMsgHandler
-	timerRegister        etimer.ITimerRegister
+	timer_register       etimer.ITimerRegister
 	last_beat_heart_time int64
 }
 
@@ -41,7 +41,7 @@ func NewCSClientSession(handler ICSClientMsgHandler) *CSClientSession {
 	sess := &CSClientSession{
 		handler:              handler,
 		last_beat_heart_time: util.GetMillsecond(),
-		timerRegister:        etimer.NewTimerRegister(),
+		timer_register:       etimer.NewTimerRegister(),
 	}
 
 	sess.SetListenType()
@@ -54,7 +54,7 @@ func (c *CSClientSession) OnEstablish() {
 	elog.InfoAf("CSClientSession %v Establish", c.GetSessID())
 	c.handler.OnConnect(c)
 
-	c.timerRegister.AddRepeatTimer(CS_CLIENT_BEAT_HEART_TIME_ID, CS_CLIENT_BEAT_HEART_TIME_DELAY, "CSClientSession-BeatHeartCheck", func(v ...interface{}) {
+	c.timer_register.AddRepeatTimer(CS_CLIENT_BEAT_HEART_TIME_ID, CS_CLIENT_BEAT_HEART_TIME_DELAY, "CSClientSession-BeatHeartCheck", func(v ...interface{}) {
 		now := util.GetMillsecond()
 		if (c.last_beat_heart_time + C2S_BEAT_HEART_MAX_TIME) < now {
 			elog.ErrorAf("CSClientSession %v  BeatHeart Exception", c.GetSessID())
@@ -64,7 +64,7 @@ func (c *CSClientSession) OnEstablish() {
 	}, []interface{}{}, true)
 
 	if c.IsConnectType() {
-		c.timerRegister.AddRepeatTimer(CS_CLIENT_SEND_BEAT_HEART_TIME_ID, CS_CLIENT_SEND_BEAT_HEART_DELAY, "CSClientSession-SendBeatHeart", func(v ...interface{}) {
+		c.timer_register.AddRepeatTimer(CS_CLIENT_SEND_BEAT_HEART_TIME_ID, CS_CLIENT_SEND_BEAT_HEART_DELAY, "CSClientSession-SendBeatHeart", func(v ...interface{}) {
 			elog.DebugAf("[CSClientSession] SessID=%v Send Beat Heart", c.GetSessID())
 			c.AsyncSendMsg(uint32(pb.EClient2GameMsgId_c2s_client_session_ping_id), nil, nil)
 		}, []interface{}{}, true)
@@ -74,7 +74,7 @@ func (c *CSClientSession) OnEstablish() {
 func (c *CSClientSession) OnTerminate() {
 	elog.InfoAf("CSClientSession %v Terminate", c.GetSessID())
 	c.factory.RemoveSession(c.GetSessID())
-	c.timerRegister.KillAllTimer()
+	c.timer_register.KillAllTimer()
 	c.handler.OnDisconnect(c)
 }
 
@@ -103,23 +103,30 @@ func (c *CSClientSession) SendProtoMsg(msgID uint32, msg proto.Message) bool {
 }
 
 type CSClientSessionMgr struct {
-	nextId  uint64
-	sessMap map[uint64]inet.ISession
-	handler ICSClientMsgHandler
-	coder   inet.ICoder
+	next_id  uint64
+	sess_map map[uint64]inet.ISession
+	handler  ICSClientMsgHandler
+	coder    inet.ICoder
+}
+
+func NewCSClientSessionMgr() *CSClientSessionMgr {
+	return &CSClientSessionMgr{
+		next_id:  1,
+		sess_map: make(map[uint64]inet.ISession),
+	}
 }
 
 func (c *CSClientSessionMgr) CreateSession() inet.ISession {
 	sess := NewCSClientSession(c.handler)
-	sess.SetSessID(c.nextId)
+	sess.SetSessID(c.next_id)
 	sess.SetCoder(c.coder)
 	sess.SetSessionFactory(c)
-	c.nextId++
+	c.next_id++
 	return sess
 }
 
 func (c *CSClientSessionMgr) AddSession(session inet.ISession) {
-	c.sessMap[session.GetSessID()] = session
+	c.sess_map[session.GetSessID()] = session
 }
 
 func (c *CSClientSessionMgr) FindSession(id uint64) inet.ISession {
@@ -127,7 +134,7 @@ func (c *CSClientSessionMgr) FindSession(id uint64) inet.ISession {
 		return nil
 	}
 
-	if sess, ok := c.sessMap[id]; ok {
+	if sess, ok := c.sess_map[id]; ok {
 		return sess
 	}
 
@@ -135,17 +142,17 @@ func (c *CSClientSessionMgr) FindSession(id uint64) inet.ISession {
 }
 
 func (c *CSClientSessionMgr) RemoveSession(id uint64) {
-	if _, ok := c.sessMap[id]; ok {
-		delete(c.sessMap, id)
+	if _, ok := c.sess_map[id]; ok {
+		delete(c.sess_map, id)
 	}
 }
 
 func (c *CSClientSessionMgr) Count() int {
-	return len(c.sessMap)
+	return len(c.sess_map)
 }
 
 func (c *CSClientSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgID uint32, msg proto.Message) {
-	serversess, ok := c.sessMap[sessionID]
+	serversess, ok := c.sess_map[sessionID]
 	if ok {
 		serversess.AsyncSendProtoMsg(msgID, msg, nil)
 	}
@@ -176,8 +183,5 @@ func (c *CSClientSessionMgr) Listen(addr string, handler ICSClientMsgHandler, co
 var GCSClientSessionMgr *CSClientSessionMgr
 
 func init() {
-	GCSClientSessionMgr = &CSClientSessionMgr{
-		nextId:  1,
-		sessMap: make(map[uint64]inet.ISession),
-	}
+	GCSClientSessionMgr = NewCSClientSessionMgr()
 }

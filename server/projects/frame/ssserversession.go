@@ -160,15 +160,15 @@ func (s *SSServerSession) OnVerify() {
 
 func (s *SSServerSession) OnTerminate() {
 	if s.remoteServerID == 0 {
-		elog.InfoAf("[SSServerSession] SessID=%v  Terminate", s.sessID)
+		elog.InfoAf("[SSServerSession] SessID=%v  Terminate", s.sess_id)
 	} else {
-		elog.InfoAf("[SSServerSession] SessID=%v [ID=%v,Type=%v,Ip=%v] Terminate", s.sessID, s.remoteServerID, s.remoteServerType, s.remoteOuter)
+		elog.InfoAf("[SSServerSession] SessID=%v [ID=%v,Type=%v,Ip=%v] Terminate", s.sess_id, s.remoteServerID, s.remoteServerType, s.remoteOuter)
 	}
 
 	s.timerRegister.KillAllTimer()
 	factory := s.GetSessionFactory()
 	ssserverfactory := factory.(*SSServerSessionMgr)
-	ssserverfactory.RemoveSession(s.sessID)
+	ssserverfactory.RemoveSession(s.sess_id)
 	if s.sessState == SESS_ESTABLISH_STATE {
 		s.logicServer.SetServerSession(nil)
 		s.logicServer.OnTerminate(s)

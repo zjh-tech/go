@@ -10,21 +10,21 @@ type ISignalQuitDealer interface {
 }
 
 type SignalDealer struct {
-	SignalChan     chan os.Signal
-	quitDealer     ISignalQuitDealer
-	CpuProfileFlag bool
-	CpuFile        *os.File
+	signal_chan      chan os.Signal
+	quit_dealer      ISignalQuitDealer
+	cpu_profile_flag bool
+	cpu_file         *os.File
 }
 
 func (s *SignalDealer) SetSignalQuitDealer(dealer ISignalQuitDealer) {
-	s.quitDealer = dealer
+	s.quit_dealer = dealer
 }
 
 var GSignalDealer *SignalDealer
 
 func init() {
 	GSignalDealer = &SignalDealer{
-		SignalChan: make(chan os.Signal),
-		quitDealer: nil,
+		signal_chan: make(chan os.Signal),
+		quit_dealer: nil,
 	}
 }

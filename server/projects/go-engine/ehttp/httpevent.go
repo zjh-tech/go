@@ -1,46 +1,44 @@
 package ehttp
 
-//HttpEvent
 type HttpEvent struct {
-	httpConn IHttpConnection
-	msgID    uint32
-	datas    []byte
+	http_conn IHttpConnection
+	msg_id    uint32
+	datas     []byte
 }
 
-func NewHttpEvent(httpConn IHttpConnection, msgID uint32, datas []byte) *HttpEvent {
+func NewHttpEvent(http_conn IHttpConnection, msg_id uint32, datas []byte) *HttpEvent {
 	return &HttpEvent{
-		httpConn: httpConn,
-		msgID:    msgID,
-		datas:    datas,
+		http_conn: http_conn,
+		msg_id:    msg_id,
+		datas:     datas,
 	}
 }
 
 func (h *HttpEvent) GetHttpConnection() IHttpConnection {
-	return h.httpConn
+	return h.http_conn
 }
 func (h *HttpEvent) GetMsgID() uint32 {
-	return h.msgID
+	return h.msg_id
 }
 
 func (h *HttpEvent) GetDatas() []byte {
 	return h.datas
 }
 
-//HttpEventQueue
 type HttpEventQueue struct {
-	httpEvtQueue chan IHttpEvent
+	http_evt_queue chan IHttpEvent
 }
 
-func NewHttpEventQueue(maxCount uint32) *HttpEventQueue {
+func new_http_event_queue(max_count uint32) *HttpEventQueue {
 	return &HttpEventQueue{
-		httpEvtQueue: make(chan IHttpEvent, maxCount),
+		http_evt_queue: make(chan IHttpEvent, max_count),
 	}
 }
 
 func (e *HttpEventQueue) PushHttpEvent(req IHttpEvent) {
-	e.httpEvtQueue <- req
+	e.http_evt_queue <- req
 }
 
 func (e *HttpEventQueue) GetHttpEventQueue() chan IHttpEvent {
-	return e.httpEvtQueue
+	return e.http_evt_queue
 }

@@ -60,7 +60,7 @@ func SendServiceDiscoveryHttpReq(url string, msgID uint32, datas []byte) {
 
 type ServiceDiscoveryHttpClient struct {
 	ServiceInitFlag bool
-	timeRegister    etimer.ITimerRegister
+	time_register   etimer.ITimerRegister
 	cb              SDHttpCbFunc
 }
 
@@ -70,7 +70,7 @@ func (s *ServiceDiscoveryHttpClient) Init(_url string, _serverID uint64, _token 
 	full_url += "http://" + _url
 	elog.InfoA("[SDClient] Http Client Init Ok")
 
-	s.timeRegister.AddRepeatTimer(SERVICEDISCOVERY_HTTP_TIMER_ID, SERVICEDISCOVERY_HTTP_TIMER_DELAY, "SDClient-SendSDHttpReq", func(v ...interface{}) {
+	s.time_register.AddRepeatTimer(SERVICEDISCOVERY_HTTP_TIMER_ID, SERVICEDISCOVERY_HTTP_TIMER_DELAY, "SDClient-SendSDHttpReq", func(v ...interface{}) {
 		url := v[0].(string)
 		serverID := v[1].(uint64)
 		token := v[2].(string)
@@ -174,7 +174,7 @@ var GServiceDiscoveryHttpClient *ServiceDiscoveryHttpClient
 func init() {
 	GServiceDiscoveryHttpClient = &ServiceDiscoveryHttpClient{
 		ServiceInitFlag: false,
-		timeRegister:    etimer.NewTimerRegister(),
+		time_register:   etimer.NewTimerRegister(),
 	}
 
 	GSDHttpServerSession = &SDHttpServerSession{

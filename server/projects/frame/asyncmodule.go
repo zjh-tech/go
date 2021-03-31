@@ -6,14 +6,14 @@ import (
 )
 
 type AsyncEvent struct {
-	EventType uint32
-	Datas     interface{}
+	event_type uint32
+	datas      interface{}
 }
 
 func NewAsyncEvent(t uint32, datas interface{}) *AsyncEvent {
 	return &AsyncEvent{
-		EventType: t,
-		Datas:     datas,
+		event_type: t,
+		datas:      datas,
 	}
 }
 
@@ -22,28 +22,20 @@ const (
 )
 
 type AsyncModule struct {
-	asyncEvtQueue chan *AsyncEvent
+	async_evt_queue chan *AsyncEvent
 }
 
-func (c *AsyncModule) StartReloadAllConfig() {
-	go func() {
-		elog.InfoA("[Server] ReloadAllConfig Start")
-		cfgMgr := &config.ConfigMgr{}
-		if err := cfgMgr.LoadAllCfg(config.GConfigMgr.DirPath); err != nil {
-			elog.ErrorAf("[Server] ReloadAllConfig Error=%v", err)
-			return
-		}
-
-		evt := NewAsyncEvent(ReloadConfigType, cfgMgr)
-		c.asyncEvtQueue <- evt
-	}()
+func new_async_module(evt_queue_size int) *AsyncModule {
+	return &AsyncModule{
+		async_evt_queue: make(chan *AsyncEvent, evt_queue_size),
+	}
 }
 
 func (c *AsyncModule) Run() bool {
 	select {
-	case evt, _ := <-c.asyncEvtQueue:
-		if evt.EventType == ReloadConfigType {
-			cfgMgr := evt.Datas.(*config.ConfigMgr)
+	case evt, _ := <-c.async_evt_queue:
+		if evt.event_type == ReloadConfigType {
+			cfgMgr := evt.datas.(*config.ConfigMgr)
 			config.GConfigMgr = cfgMgr
 			elog.InfoA("[Server] ReloadAllConfig End")
 		}
@@ -53,10 +45,22 @@ func (c *AsyncModule) Run() bool {
 	}
 }
 
+func (c *AsyncModule) StartReloadAllConfig() {
+	go func() {
+		elog.InfoA("[Server] ReloadAllConfig Start")
+		cfg_mgr := &config.ConfigMgr{}
+		if err := cfg_mgr.LoadAllCfg(config.GConfigMgr.DirPath); err != nil {
+			elog.ErrorAf("[Server] ReloadAllConfig Error=%v", err)
+			return
+		}
+
+		evt := NewAsyncEvent(ReloadConfigType, cfg_mgr)
+		c.async_evt_queue <- evt
+	}()
+}
+
 var GAsyncModule *AsyncModule
 
 func init() {
-	GAsyncModule = &AsyncModule{
-		asyncEvtQueue: make(chan *AsyncEvent, 100),
-	}
+	GAsyncModule = new_async_module(1024)
 }

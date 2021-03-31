@@ -34,15 +34,15 @@ type ServiceDiscoveryClient struct {
 	session_id           uint64
 }
 
-func (s *ServiceDiscoveryClient) Init(_addr string, _server_id uint64, _token string, _cb SDCbFunc) bool {
-	s.addr = _addr
-	s.server_id = _server_id
-	s.token = _token
+func (s *ServiceDiscoveryClient) Init(addr string, server_id uint64, token string, cb_func SDCbFunc) bool {
+	s.addr = addr
+	s.server_id = server_id
+	s.token = token
 	s.init_flag = false
-	s.cb_func = _cb
+	s.cb_func = cb_func
 	s.ssclient_session_mgr = GSSClientSessionMgr
-	s.session_id = s.ssclient_session_mgr.SSClientConnect(_addr, GSDServerSession, nil)
-	elog.InfoAf("[ServiceDiscoveryClient] Connect SessionID=%v Addr=%v", s.session_id, _addr)
+	s.session_id = s.ssclient_session_mgr.SSClientConnect(addr, GSDServerSession, nil)
+	elog.InfoAf("[ServiceDiscoveryClient] Connect SessionID=%v Addr=%v", s.session_id, addr)
 
 	s.time_register.AddRepeatTimer(SD_CLIENT_SEND_REQ_TIMER_ID, SD_CLIENT_SEND_REQ_TIMER_DELAY, "SDClient-SendSDReq", func(v ...interface{}) {
 		if s.ssclient_session == nil {
@@ -57,7 +57,7 @@ func (s *ServiceDiscoveryClient) Init(_addr string, _server_id uint64, _token st
 		}
 		s.ssclient_session.SendProtoMsg(uint32(pb.S2SBaseMsgId_service_discovery_req_id), req, nil)
 		elog.DebugAf("[ServiceDiscoveryClient] Send ServiceDiscoveryReq ServerID=%v", serverID)
-	}, []interface{}{_server_id, _token}, true)
+	}, []interface{}{server_id, token}, true)
 
 	s.time_register.AddRepeatTimer(SD_CLIENT_RECONNECT_TIMER_ID, SD_CLIENT_RECONNECT_TIMER_DELAY, "SDClient-CheckReconnect", func(v ...interface{}) {
 		if s.ssclient_session != nil {

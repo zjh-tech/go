@@ -5,23 +5,23 @@ import (
 )
 
 type HttpNet struct {
-	httpEvtQueue IHttpEventQueue
+	http_evt_queue IHttpEventQueue
 }
 
-func newHttpNet() *HttpNet {
+func new_httpnet(max_count uint32) *HttpNet {
 	return &HttpNet{
-		httpEvtQueue: NewHttpEventQueue(4096),
+		http_evt_queue: new_http_event_queue(max_count),
 	}
 }
 
-func (h *HttpNet) PushHttpEvent(httpEvt IHttpEvent) {
-	h.httpEvtQueue.PushHttpEvent(httpEvt)
+func (h *HttpNet) PushHttpEvent(http_evt IHttpEvent) {
+	h.http_evt_queue.PushHttpEvent(http_evt)
 }
 
 func (h *HttpNet) Run(loop_count int) bool {
 	for i := 0; i < loop_count; i++ {
 		select {
-		case httpEvt, ok := <-h.httpEvtQueue.GetHttpEventQueue():
+		case httpEvt, ok := <-h.http_evt_queue.GetHttpEventQueue():
 			if !ok {
 				return false
 			}
@@ -49,5 +49,5 @@ func (h *HttpNet) UnInit() {
 var GHttpNet *HttpNet
 
 func init() {
-	GHttpNet = newHttpNet()
+	GHttpNet = new_httpnet(1024 * 4)
 }

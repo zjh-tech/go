@@ -8,7 +8,7 @@ import (
 
 type ServerCfg struct {
 	ServiceName string
-	serverType  uint32
+	ServerType  uint32
 	ServerId    uint64
 	Token       string //ServiceDiscovery的Token
 	//Log
@@ -66,7 +66,7 @@ func ReadServerCfg(path string) error {
 
 	servertypeElem := cfgRoot.FindElement("servertype")
 	if servertypeElem != nil {
-		GServerCfg.serverType, _ = util.Str2Uint32(servertypeElem.Text())
+		GServerCfg.ServerType, _ = util.Str2Uint32(servertypeElem.Text())
 	}
 
 	serveridElem := cfgRoot.FindElement("serverid")

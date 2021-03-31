@@ -23,10 +23,9 @@ type ISSClientMsgHandler interface {
 type SSClientSession struct {
 	Session
 	handler              ISSClientMsgHandler
-	timerRegister        etimer.ITimerRegister
+	timer_register       etimer.ITimerRegister
 	last_beat_heart_time int64
-	sessState            uint32
-	remoteOuter          string
+	remote_outer         string
 }
 
 const (
@@ -47,15 +46,15 @@ func NewSSClientSession(handler ISSClientMsgHandler) *SSClientSession {
 	sess := &SSClientSession{
 		handler:              handler,
 		last_beat_heart_time: util.GetMillsecond(),
-		timerRegister:        etimer.NewTimerRegister(),
+		timer_register:       etimer.NewTimerRegister(),
 	}
 	sess.SetListenType()
 	sess.Session.SessionOnHandler = sess
 	return sess
 }
 
-func (s *SSClientSession) SetRemoteOuter(outer string) {
-	s.remoteOuter = outer
+func (s *SSClientSession) SetRemoteOuter(remote_outer string) {
+	s.remote_outer = remote_outer
 }
 
 func (s *SSClientSession) OnEstablish() {
@@ -63,7 +62,7 @@ func (s *SSClientSession) OnEstablish() {
 	s.factory.AddSession(s)
 	s.handler.OnConnect(s)
 
-	s.timerRegister.AddRepeatTimer(SS_CLIENT_CHECK_BEAT_HEART_TIME_ID, SS_CLIENT_HEART_TIME_DELAY, "SSClientSession-BeatHeartCheck", func(v ...interface{}) {
+	s.timer_register.AddRepeatTimer(SS_CLIENT_CHECK_BEAT_HEART_TIME_ID, SS_CLIENT_HEART_TIME_DELAY, "SSClientSession-BeatHeartCheck", func(v ...interface{}) {
 		now := util.GetMillsecond()
 		if (s.last_beat_heart_time + SS_CLIENT_BEAT_HEART_MAX_TIME) < now {
 			elog.ErrorAf("[SSClientSession] SessID=%v BeatHeart Check Exception", s.GetSessID())
@@ -75,7 +74,7 @@ func (s *SSClientSession) OnEstablish() {
 	}, []interface{}{}, true)
 
 	if s.IsConnectType() {
-		s.timerRegister.AddRepeatTimer(SS_CLIENT_SEND_BEAT_HEART_TIME_ID, SS_CLIENT_SEND_BEAT_HEART_DELAY, "SSClientSession-SendBeatHeart", func(v ...interface{}) {
+		s.timer_register.AddRepeatTimer(SS_CLIENT_SEND_BEAT_HEART_TIME_ID, SS_CLIENT_SEND_BEAT_HEART_DELAY, "SSClientSession-SendBeatHeart", func(v ...interface{}) {
 			elog.DebugAf("[SSClientSession] SessID=%v Send Beat Heart", s.GetSessID())
 			s.AsyncSendMsg(uint32(pb.S2SBaseMsgId_s2s_client_session_ping_id), nil, nil)
 		}, []interface{}{}, true)
@@ -84,7 +83,7 @@ func (s *SSClientSession) OnEstablish() {
 
 func (s *SSClientSession) OnTerminate() {
 	elog.InfoAf("SSClientSession %v Terminate", s.GetSessID())
-	s.timerRegister.KillAllTimer()
+	s.timer_register.KillAllTimer()
 	factory := s.GetSessionFactory()
 	ssclientfactory := factory.(*SSClientSessionMgr)
 	ssclientfactory.RemoveSession(s.GetSessID())
@@ -116,9 +115,9 @@ func (s *SSClientSession) SendProtoMsg(msgID uint32, msg proto.Message, attach i
 }
 
 type SCClientSessionCache struct {
-	SessionID   uint64
-	Addr        string
-	ConnectTick int64
+	session_id   uint64
+	addr         string
+	connect_tick int64
 }
 
 const (
@@ -130,43 +129,52 @@ const (
 )
 
 type SSClientSessionMgr struct {
-	nextId        uint64
-	sessMap       map[uint64]inet.ISession
-	handler       ISSClientMsgHandler
-	coder         inet.ICoder
-	cacheMap      map[uint64]*SCClientSessionCache
-	timerRegister etimer.ITimerRegister
+	next_id        uint64
+	sess_map       map[uint64]inet.ISession
+	handler        ISSClientMsgHandler
+	coder          inet.ICoder
+	cache_map      map[uint64]*SCClientSessionCache
+	timer_register etimer.ITimerRegister
+}
+
+func NewSSClientSessionMgr() *SSClientSessionMgr {
+	return &SSClientSessionMgr{
+		next_id:        1,
+		sess_map:       make(map[uint64]inet.ISession),
+		timer_register: etimer.NewTimerRegister(),
+		cache_map:      make(map[uint64]*SCClientSessionCache),
+	}
 }
 
 func (s *SSClientSessionMgr) Init() {
-	s.timerRegister.AddRepeatTimer(S2S_CLIENTMGR_CACHE_TIMER_ID, S2S_CLIENTMGR_CACHE_TIMER_DELAY, "SSClientSessionMgr-Cache", func(v ...interface{}) {
+	s.timer_register.AddRepeatTimer(S2S_CLIENTMGR_CACHE_TIMER_ID, S2S_CLIENTMGR_CACHE_TIMER_DELAY, "SSClientSessionMgr-Cache", func(v ...interface{}) {
 		now := util.GetMillsecond()
-		for sessionID, cache := range s.cacheMap {
-			if cache.ConnectTick < now {
-				elog.InfoAf("[SSClientSessionMgr] Timeout Triggle  ConnectCache Del SesssionID=%v,Addr=%v", cache.SessionID, cache.Addr)
-				delete(s.cacheMap, sessionID)
+		for sessionID, cache := range s.cache_map {
+			if cache.connect_tick < now {
+				elog.InfoAf("[SSClientSessionMgr] Timeout Triggle  ConnectCache Del SesssionID=%v,Addr=%v", cache.session_id, cache.addr)
+				delete(s.cache_map, sessionID)
 			}
 		}
 	}, []interface{}{}, true)
 }
 
 func (s *SSClientSessionMgr) IsInConnectCache(session_id uint64) bool {
-	_, ok := s.cacheMap[session_id]
+	_, ok := s.cache_map[session_id]
 	return ok
 }
 
 func (s *SSClientSessionMgr) IsExistSessionOfSessID(session_id uint64) bool {
-	_, ok := s.sessMap[session_id]
+	_, ok := s.sess_map[session_id]
 	return ok
 }
 
 func (s *SSClientSessionMgr) CreateSession() inet.ISession {
 	sess := NewSSClientSession(s.handler)
-	sess.SetSessID(s.nextId)
+	sess.SetSessID(s.next_id)
 	sess.SetCoder(s.coder)
 	sess.SetSessionFactory(s)
 	elog.InfoAf("[SSClientSessionMgr] CreateSession SessID=%v", sess.GetSessID())
-	s.nextId++
+	s.next_id++
 	return sess
 }
 
@@ -175,7 +183,7 @@ func (s *SSClientSessionMgr) FindSession(id uint64) inet.ISession {
 		return nil
 	}
 
-	if sess, ok := s.sessMap[id]; ok {
+	if sess, ok := s.sess_map[id]; ok {
 		return sess
 	}
 
@@ -183,25 +191,25 @@ func (s *SSClientSessionMgr) FindSession(id uint64) inet.ISession {
 }
 
 func (s *SSClientSessionMgr) AddSession(session inet.ISession) {
-	s.sessMap[session.GetSessID()] = session
-	if info, ok := s.cacheMap[session.GetSessID()]; ok {
-		elog.InfoAf("[SSClientSessionMgr] AddSession Triggle ConnectCache Del SessionID=%v,ServerType=%v", session.GetSessID(), info.Addr)
-		delete(s.cacheMap, session.GetSessID())
+	s.sess_map[session.GetSessID()] = session
+	if info, ok := s.cache_map[session.GetSessID()]; ok {
+		elog.InfoAf("[SSClientSessionMgr] AddSession Triggle ConnectCache Del SessionID=%v,ServerType=%v", session.GetSessID(), info.addr)
+		delete(s.cache_map, session.GetSessID())
 	}
 }
 
 func (s *SSClientSessionMgr) RemoveSession(id uint64) {
-	if _, ok := s.sessMap[id]; ok {
-		delete(s.sessMap, id)
+	if _, ok := s.sess_map[id]; ok {
+		delete(s.sess_map, id)
 	}
 }
 
 func (s *SSClientSessionMgr) Count() int {
-	return len(s.sessMap)
+	return len(s.sess_map)
 }
 
 func (s *SSClientSessionMgr) AsyncSendProtoMsgBySessionID(sessionID uint64, msgID uint32, msg proto.Message) {
-	serversess, ok := s.sessMap[sessionID]
+	serversess, ok := s.sess_map[sessionID]
 	if ok {
 		serversess.AsyncSendProtoMsg(msgID, msg, nil)
 	}
@@ -221,11 +229,11 @@ func (s *SSClientSessionMgr) SSClientConnect(addr string, handler ISSClientMsgHa
 	ssClientSess.SetConnectType()
 
 	cache := &SCClientSessionCache{
-		SessionID:   sess.GetSessID(),
-		Addr:        addr,
-		ConnectTick: util.GetMillsecond() + S2S_ONCE_CONNECT_MAX_TIME,
+		session_id:   sess.GetSessID(),
+		addr:         addr,
+		connect_tick: util.GetMillsecond() + S2S_ONCE_CONNECT_MAX_TIME,
 	}
-	s.cacheMap[sess.GetSessID()] = cache
+	s.cache_map[sess.GetSessID()] = cache
 	elog.InfoAf("[SSClientSessionMgr]ConnectCache Add SessionID=%v,Addr=%v", sess.GetSessID(), addr)
 	enet.GNet.Connect(addr, sess)
 
@@ -245,10 +253,5 @@ func (s *SSClientSessionMgr) SSClientListen(addr string, handler ISSClientMsgHan
 var GSSClientSessionMgr *SSClientSessionMgr
 
 func init() {
-	GSSClientSessionMgr = &SSClientSessionMgr{
-		nextId:        1,
-		sessMap:       make(map[uint64]inet.ISession),
-		timerRegister: etimer.NewTimerRegister(),
-		cacheMap:      make(map[uint64]*SCClientSessionCache),
-	}
+	GSSClientSessionMgr = NewSSClientSessionMgr()
 }

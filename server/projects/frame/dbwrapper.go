@@ -6,8 +6,8 @@ import (
 )
 
 //同步
-func SyncDoSqlOpt(execSql ExecSqlFunc, execRec ExecSqlRecordFunc, attach []interface{}, uid uint64) {
-	command := NewCommonCommand(execSql, execRec, attach)
+func SyncDoSqlOpt(exec_sql ExecSqlFunc, exec_rec ExecSqlRecordFunc, attach []interface{}, uid uint64) {
+	command := NewCommonCommand(exec_sql, exec_rec, attach)
 	if command == nil {
 		elog.ErrorAf("Mysql AsyncDoSqlOpt NewCommonCommand Error Uid=%v", uid)
 		return
@@ -24,9 +24,9 @@ func SyncDoSqlOpt(execSql ExecSqlFunc, execRec ExecSqlRecordFunc, attach []inter
 }
 
 //异步
-func AsyncDoSqlOpt(execSql ExecSqlFunc, execRec ExecSqlRecordFunc, attach []interface{}, uid uint64) {
+func AsyncDoSqlOpt(exec_sql ExecSqlFunc, exec_rec ExecSqlRecordFunc, attach []interface{}, uid uint64) {
 
-	command := NewCommonCommand(execSql, execRec, attach)
+	command := NewCommonCommand(exec_sql, exec_rec, attach)
 	if command == nil {
 		elog.ErrorAf("Mysql SyncDoSqlOpt NewCommonCommand Error Uid=%v", uid)
 		return

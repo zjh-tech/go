@@ -25,103 +25,99 @@ var loglevels = []string{
 }
 
 type LogEvent struct {
-	Level   int
-	Content string
-	File    string
-	Line    int
+	level   int
+	content string
+	file    string
+	line    int
 }
 
 const LogBuffEventSize = 10000
 
-func get_mill_second() int64 {
-	return time.Now().UnixNano() / 1e6
-}
-
 type Logger struct {
-	out                io.Writer //os.Stderr -> File
-	level              int
-	fileDirPrefix      string
-	events             chan *LogEvent
-	buffEvents         chan *LogEvent
-	exitChan           chan struct{}
-	lastTime           time.Time
-	file               *os.File
-	buf                bytes.Buffer
-	callDepth          int
-	closeFlag          bool
-	initCbFunc         FuncType
-	unInitCbFunc       FuncType
-	asyncFlushMaxTick  int64
-	nextAsyncFlushTick int64
+	out                   io.Writer //os.Stderr -> File
+	level                 int
+	file_dir_prefix       string
+	events                chan *LogEvent
+	buff_events           chan *LogEvent
+	exit_chan             chan struct{}
+	last_time             time.Time
+	file                  *os.File
+	buf                   bytes.Buffer
+	call_depth            int
+	close_flag            bool
+	init_cb_func          FuncType
+	uninit_cb_func        FuncType
+	async_flush_max_tick  int64
+	next_async_flush_tick int64
 }
 
-func NewLogger(out io.Writer, fileDir string, level int) *Logger {
+func new_logger(out io.Writer, file_dir_prefix string, level int) *Logger {
 	logger := &Logger{
-		out:               out,
-		level:             level,
-		fileDirPrefix:     fileDir,
-		events:            make(chan *LogEvent),
-		buffEvents:        make(chan *LogEvent, LogBuffEventSize),
-		exitChan:          make(chan struct{}),
-		callDepth:         2,
-		closeFlag:         false,
-		asyncFlushMaxTick: 100,
+		out:                  out,
+		level:                level,
+		file_dir_prefix:      file_dir_prefix,
+		events:               make(chan *LogEvent),
+		buff_events:          make(chan *LogEvent, LogBuffEventSize),
+		exit_chan:            make(chan struct{}),
+		call_depth:           2,
+		close_flag:           false,
+		async_flush_max_tick: 100,
 	}
 
 	return logger
 }
 
-func (l *Logger) StartWriterGoroutine() {
+func (l *Logger) start_writer_goroutine() {
 	fmt.Printf(" Log Goroutine Start \n")
 
-	if l.initCbFunc != nil {
-		l.initCbFunc()
+	if l.init_cb_func != nil {
+		l.init_cb_func()
 	}
 
 	go func() {
 		defer func() {
 			fmt.Printf(" Log Goroutine Exit \n")
-			if l.unInitCbFunc != nil {
-				l.unInitCbFunc()
+			if l.uninit_cb_func != nil {
+				l.uninit_cb_func()
 			}
 		}()
 
 		exit := false
 		for {
-			if exit && len(l.buffEvents) == 0 && len(l.events) == 0 {
+			if exit && len(l.buff_events) == 0 && len(l.events) == 0 {
 				//ensure all log write file
 				l.out.Write(l.buf.Bytes())
 				return
 			}
 			select {
-			case buffEvent := <-l.buffEvents:
-				l.outPut(buffEvent.Level, buffEvent.Content, buffEvent.File, buffEvent.Line, true)
+			case buffEvent := <-l.buff_events:
+				l.out_put(buffEvent.level, buffEvent.content, buffEvent.file, buffEvent.line, true)
 
 			case event := <-l.events:
-				l.outPut(event.Level, event.Content, event.File, event.Line, false)
-			case <-l.exitChan:
-				l.exitChan = nil
+				l.out_put(event.level, event.content, event.file, event.line, false)
+			case <-l.exit_chan:
+				l.exit_chan = nil
 				exit = true
 			}
 		}
 	}()
 }
 
-func (l *Logger) Close() {
-	l.closeFlag = true
-	close(l.exitChan)
+func (l *Logger) close() {
+	l.close_flag = true
+	close(l.exit_chan)
 }
 
-func (l *Logger) SetInitCbFunc(initCb FuncType) {
-	l.initCbFunc = initCb
+func (l *Logger) set_init_cb_func(init_cb_func FuncType) {
+	l.init_cb_func = init_cb_func
 }
 
-func (l *Logger) SetUnInitCbFunc(unInitCb FuncType) {
-	l.unInitCbFunc = unInitCb
+func (l *Logger) set_uninit_cb_func(uninit_cb_func FuncType) {
+	l.uninit_cb_func = uninit_cb_func
 }
 
-func (l *Logger) AddEvent(level int, content string, async bool) {
-	if l.closeFlag {
+func (l *Logger) add_event(level int, content string, async bool) {
+	if l.close_flag {
 		return
 	}
 
@@ -129,7 +125,7 @@ func (l *Logger) AddEvent(level int, content string, async bool) {
 		return
 	}
 
-	_, file, line, _ := runtime.Caller(l.callDepth)
+	_, file, line, _ := runtime.Caller(l.call_depth)
 	index := strings.LastIndex(file, "/")
 	partFileName := file
 	if index != 0 {
@@ -137,24 +133,28 @@ func (l *Logger) AddEvent(level int, content string, async bool) {
 	}
 
 	event := &LogEvent{
-		Level:   level,
-		Content: content,
-		File:    partFileName,
-		Line:    line,
+		level:   level,
+		content: content,
+		file:    partFileName,
+		line:    line,
 	}
 
 	if async == true {
-		l.buffEvents <- event
+		l.buff_events <- event
 	} else {
 		l.events <- event
 	}
 }
 
-func (l *Logger) outPut(level int, content string, file string, line int, asyncFlag bool) {
+func get_mill_second() int64 {
+	return time.Now().UnixNano() / 1e6
+}
+
+func (l *Logger) out_put(level int, content string, file string, line int, async_flag bool) {
 	//time zone
 	now := time.Now()
-	l.EnsureFileExist(now)
-	l.lastTime = now
+	l.ensure_file_fxist(now)
+	l.last_time = now
 
 	//add time
 	nowStr := time.Now().Format("2006-01-02 15:04:05")
@@ -166,8 +166,8 @@ func (l *Logger) outPut(level int, content string, file string, line int, asyncF
 		l.buf.WriteByte('\n')
 	}
 
-	if asyncFlag {
-		if l.nextAsyncFlushTick < get_mill_second() {
+	if async_flag {
+		if l.next_async_flush_tick < get_mill_second() {
 			l.out.Write(l.buf.Bytes())
 			l.buf.Reset()
 		}
@@ -176,24 +176,24 @@ func (l *Logger) outPut(level int, content string, file string, line int, asyncF
 		l.buf.Reset()
 	}
 
-	l.outPutConsole(string(l.buf.Bytes()))
+	l.out_put_console(string(l.buf.Bytes()))
 }
 
-func (l *Logger) EnsureFileExist(now time.Time) {
-	if checkDiffDate(now, l.lastTime) {
+func (l *Logger) ensure_file_fxist(now time.Time) {
+	if check_diff_date(now, l.last_time) {
 		year, month, day := now.Date()
 		dir := fmt.Sprintf("%d-%02d-%02d", year, month, day)
 		filename := fmt.Sprintf("%d%02d%02d_%02d.log", year, month, day, now.Hour())
-		l.createLogFile(dir, filename)
+		l.create_log_file(dir, filename)
 	}
 }
 
-func (l *Logger) createLogFile(dir string, filename string) {
+func (l *Logger) create_log_file(dir string, filename string) {
 	var file *os.File
-	fullDir := l.fileDirPrefix + "/" + dir
-	_ = createMutiDir(fullDir)
+	fullDir := l.file_dir_prefix + "/" + dir
+	_ = create_muti_dir(fullDir)
 	fullFilePath := fullDir + "/" + filename
-	if isExistPath(fullFilePath) {
+	if is_exist_path(fullFilePath) {
 		file, _ = os.OpenFile(fullFilePath, os.O_APPEND|os.O_RDWR, 0644)
 	} else {
 		file, _ = os.OpenFile(fullFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
@@ -209,7 +209,7 @@ func (l *Logger) createLogFile(dir string, filename string) {
 	l.out = file
 }
 
-func isExistPath(path string) bool {
+func is_exist_path(path string) bool {
 	_, err := os.Stat(path)
 	if err == nil {
 		return true
@@ -220,9 +220,9 @@ func isExistPath(path string) bool {
 	return false
 }
 
-func createMutiDir(filePath string) error {
-	if !isExistPath(filePath) {
-		err := os.MkdirAll(filePath, os.ModePerm)
+func create_muti_dir(file_path string) error {
+	if !is_exist_path(file_path) {
+		err := os.MkdirAll(file_path, os.ModePerm)
 		if err != nil {
 			return err
 		}
@@ -231,7 +231,7 @@ func createMutiDir(filePath string) error {
 	return nil
 }
 
-func checkDiffDate(now time.Time, last time.Time) bool {
+func check_diff_date(now time.Time, last time.Time) bool {
 	year, month, day := now.Date()
 	hour, _, _ := now.Clock()
 

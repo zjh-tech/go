@@ -20,43 +20,43 @@ type DBConnSpec struct {
 }
 
 type DBModule struct {
-	dbTableMaxCount uint64
-	dbConnMaxCount  uint64
-	DBConnSpecs     []*DBConnSpec
-	conns           map[uint64]IMysqlConn //DBIndex -IMysqlConn
-	executedQueus   chan IMysqlCommand
+	db_table_max_count uint64
+	db_conn_max_count  uint64
+	db_conn_specs      []*DBConnSpec
+	executed_queus     chan IMysqlCommand
+	conns              map[uint64]IMysqlConn
 }
 
-func (d *DBModule) Init(dbConnMaxCount uint64, tableMaxCount uint64, connSpecs []*DBConnSpec) error {
-	d.dbConnMaxCount = dbConnMaxCount
-	d.dbTableMaxCount = tableMaxCount
-	d.DBConnSpecs = connSpecs
+func (d *DBModule) Init(db_conn_max_count uint64, db_table_max_count uint64, db_conn_specs []*DBConnSpec) error {
+	d.db_conn_max_count = db_conn_max_count
+	d.db_table_max_count = db_table_max_count
+	d.db_conn_specs = db_conn_specs
 
-	if d.dbConnMaxCount == 0 {
+	if d.db_conn_max_count == 0 {
 		return errors.New("[DBModule] No Mysql Connect")
 	}
 
-	if d.dbConnMaxCount != uint64(len(d.DBConnSpecs)) {
+	if d.db_conn_max_count != uint64(len(d.db_conn_specs)) {
 		return errors.New("[DBModule] Mysql No Match")
 	}
 
-	for i := uint64(0); i < d.dbConnMaxCount; i++ {
-		dbNameSlices := strings.Split(d.DBConnSpecs[i].Name, "_")
+	for i := uint64(0); i < d.db_conn_max_count; i++ {
+		dbNameSlices := strings.Split(d.db_conn_specs[i].Name, "_")
 		if len(dbNameSlices) != 2 {
 			return errors.New("[DBModule] Mysql Index Error")
 		}
 
 		dbIndex, _ := util.Str2Uint64(dbNameSlices[1])
-		connErr := d.Connect(dbIndex,
-			d.DBConnSpecs[i].Name, d.DBConnSpecs[i].Ip,
-			d.DBConnSpecs[i].Port, d.DBConnSpecs[i].User,
-			d.DBConnSpecs[i].Password, d.DBConnSpecs[i].Charset)
+		connErr := d.connect(dbIndex,
+			d.db_conn_specs[i].Name, d.db_conn_specs[i].Ip,
+			d.db_conn_specs[i].Port, d.db_conn_specs[i].User,
+			d.db_conn_specs[i].Password, d.db_conn_specs[i].Charset)
 
 		if connErr != nil {
 			elog.Errorf("[DBModule] Connect Mysql DBName=%v DBIp=%v,DBPort=%v, Error = %v",
-				d.DBConnSpecs[i].Name,
-				d.DBConnSpecs[i].Ip,
-				d.DBConnSpecs[i].Port,
+				d.db_conn_specs[i].Name,
+				d.db_conn_specs[i].Ip,
+				d.db_conn_specs[i].Port,
 				connErr)
 			return connErr
 		}
@@ -69,21 +69,21 @@ func (d *DBModule) UnInit() {
 	elog.InfoA("[DB] Stop")
 }
 
-func (d *DBModule) Connect(dbIndex uint64, dbName string, ip string, port uint32, user string, password string, charset string) error {
-	if _, ok := d.conns[dbIndex]; ok {
-		errStr := fmt.Sprintln("[Mysql] DBIndx =%v DBName=%v Ip=%v Port=%v Exist", dbIndex, dbName, ip, port)
+func (d *DBModule) connect(db_index uint64, db_name string, ip string, port uint32, user string, password string, charset string) error {
+	if _, ok := d.conns[db_index]; ok {
+		errStr := fmt.Sprintln("[Mysql] DBIndx =%v DBName=%v Ip=%v Port=%v Exist", db_index, db_name, ip, port)
 		return errors.New(errStr)
 	}
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=%s", user, password, "tcp", ip, port, dbName, charset)
-	name := dbName
-	mysqlConn := NewMysqlConn(name)
-	if err := mysqlConn.Connect(dsn); err != nil {
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=%s", user, password, "tcp", ip, port, db_name, charset)
+	name := db_name
+	mysqlConn := new_mysql_conn(name)
+	if err := mysqlConn.connect(dsn); err != nil {
 		return err
 	}
 
-	elog.Infof("[Mysql] DbIndex=%v DBName=%v Connect Ip=%v Port=%v  Success", dbIndex, dbName, ip, port)
-	d.conns[dbIndex] = mysqlConn
+	elog.Infof("[Mysql] DbIndex=%v DBName=%v Connect Ip=%v Port=%v  Success", db_index, db_name, ip, port)
+	d.conns[db_index] = mysqlConn
 	return nil
 }
 
@@ -92,20 +92,20 @@ func (d *DBModule) Connect(dbIndex uint64, dbName string, ip string, port uint32
 // database_1  table_01  table_11 table_91
 // ...
 func (d *DBModule) HashDBIndex(uid uint64) uint64 {
-	//elog.InfoAf("[DBModule] UID=%v Hash DBIndex=%v", uid, uid%d.dbConnMaxCount)
-	return uid % d.dbConnMaxCount
+	elog.InfoAf("[DBModule] UID=%v Hash DBIndex=%v", uid, uid%d.db_conn_max_count)
+	return uid % d.db_conn_max_count
 }
 
 func (d *DBModule) HashTableIndex(uid uint64) uint64 {
-	dbIndex := d.HashDBIndex(uid)
-	dbTableIndex := uid % d.dbTableMaxCount
-	//elog.InfoAf("[DBModule] UID=%v Hash TableIndex=%v", uid, dbTableIndex*10+dbIndex)
-	return dbTableIndex*10 + dbIndex
+	db_index := d.HashDBIndex(uid)
+	db_table_index := uid % d.db_table_max_count
+	elog.InfoAf("[DBModule] UID=%v Hash TableIndex=%v", uid, db_table_index*10+db_index)
+	return db_table_index*10 + db_index
 }
 
-func (d *DBModule) GetTableNameByUID(tableName string, uid uint64) string {
-	tableIndex := d.HashTableIndex(uid)
-	return fmt.Sprintf("%v_%02d", tableName, tableIndex)
+func (d *DBModule) GetTableNameByUID(table_name string, uid uint64) string {
+	table_index := d.HashTableIndex(uid)
+	return fmt.Sprintf("%v_%02d", table_name, table_index)
 }
 
 //async function
@@ -115,10 +115,10 @@ func (d *DBModule) AddCommand(uid uint64, command IMysqlCommand) bool {
 		return false
 	}
 
-	dbIndex := d.HashDBIndex(uid)
-	conn, ok := d.conns[dbIndex]
+	db_index := d.HashDBIndex(uid)
+	conn, ok := d.conns[db_index]
 	if !ok {
-		elog.ErrorAf("[DBModule] Mysql UId=%v DBIndex=%v Group Is Not Exist", uid, dbIndex)
+		elog.ErrorAf("[DBModule] Mysql UId=%v DBIndex=%v Group Is Not Exist", uid, db_index)
 		return false
 	}
 
@@ -127,10 +127,10 @@ func (d *DBModule) AddCommand(uid uint64, command IMysqlCommand) bool {
 }
 
 func (d *DBModule) GetMysqlConn(uid uint64) IMysqlConn {
-	dbIndex := d.HashDBIndex(uid)
-	conn, ok := d.conns[dbIndex]
+	db_index := d.HashDBIndex(uid)
+	conn, ok := d.conns[db_index]
 	if !ok {
-		elog.ErrorAf("Mysql  UId=%v DBIndex=%v  Is Not Exist", uid, dbIndex)
+		elog.ErrorAf("Mysql  UId=%v DBIndex=%v  Is Not Exist", uid, db_index)
 		return nil
 	}
 
@@ -138,13 +138,13 @@ func (d *DBModule) GetMysqlConn(uid uint64) IMysqlConn {
 }
 
 func (d *DBModule) AddExecutedCommand(command IMysqlCommand) {
-	d.executedQueus <- command
+	d.executed_queus <- command
 }
 
 func (d *DBModule) Run(loop_count int) bool {
 	for i := 0; i < loop_count; i++ {
 		select {
-		case cmd, ok := <-d.executedQueus:
+		case cmd, ok := <-d.executed_queus:
 			if !ok {
 				return false
 			}
@@ -163,7 +163,7 @@ var GDBModule *DBModule
 
 func init() {
 	GDBModule = &DBModule{
-		conns:         make(map[uint64]IMysqlConn),
-		executedQueus: make(chan IMysqlCommand, DB_EXECUTED_QUEUE_CHAN_SIZE),
+		conns:          make(map[uint64]IMysqlConn),
+		executed_queus: make(chan IMysqlCommand, DB_EXECUTED_QUEUE_CHAN_SIZE),
 	}
 }

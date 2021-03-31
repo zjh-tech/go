@@ -3,12 +3,12 @@ package frame
 import "projects/go-engine/elog"
 
 type IDDealer struct {
-	handlerMap map[uint32]interface{}
+	handler_map map[uint32]interface{}
 }
 
 func NewIDDealer() *IDDealer {
 	return &IDDealer{
-		handlerMap: make(map[uint32]interface{}),
+		handler_map: make(map[uint32]interface{}),
 	}
 }
 
@@ -17,17 +17,17 @@ func (i *IDDealer) RegisterHandler(id uint32, dealer interface{}) bool {
 		return false
 	}
 
-	if _, ok := i.handlerMap[id]; ok {
+	if _, ok := i.handler_map[id]; ok {
 		elog.ErrorAf("IDDealer Error Id = %v Repeat", id)
 		return false
 	}
 
-	i.handlerMap[id] = dealer
+	i.handler_map[id] = dealer
 	return true
 }
 
 func (i *IDDealer) FindHandler(id uint32) interface{} {
-	if handler, ok := i.handlerMap[id]; ok {
+	if handler, ok := i.handler_map[id]; ok {
 		return handler
 	}
 

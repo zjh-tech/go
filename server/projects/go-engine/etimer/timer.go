@@ -14,63 +14,63 @@ const (
 )
 
 type Timer struct {
-	Id          uint32
-	RegisterId  uint64
-	TimeWheelId uint64
-	Delay       uint64
-	Desc        string
-	Repeat      bool
-	Rotation    int64
-	Slot        uint64
-	Cb          FuncType
-	Args        ArgType
-	State       TimerState
-	Register    *TimerRegister
+	uid          uint64
+	register_eid uint32
+	register_uid uint64
+	delay        uint64
+	desc         string
+	repeat       bool
+	rotation     int64
+	slot         uint64
+	cb           FuncType
+	args         ArgType
+	state        TimerState
+	register     *TimerRegister
 }
 
-func NewTimer(id uint32, registerId uint64, timeWheelId uint64, delay uint64, desc string, repeat bool, cb FuncType, args ArgType, register *TimerRegister) *Timer {
+func new_timer(register_eid uint32, register_uid uint64, uid uint64, delay uint64, desc string, repeat bool, cb FuncType, args ArgType, register *TimerRegister) *Timer {
 	timer := &Timer{
-		Id:          id,
-		RegisterId:  registerId,
-		TimeWheelId: timeWheelId,
-		Delay:       delay,
-		Desc:        desc,
-		Repeat:      repeat,
-		Cb:          cb,
-		Args:        args,
-		State:       TimerInvalidState,
-		Register:    register,
+		register_eid: register_eid,
+		register_uid: register_uid,
+		uid:          uid,
+		delay:        delay,
+		desc:         desc,
+		repeat:       repeat,
+		cb:           cb,
+		args:         args,
+		state:        TimerInvalidState,
+		register:     register,
 	}
 	return timer
 }
 
 func (t *Timer) Kill() {
-	t.State = TimerKilledState
-	elog.DebugAf("[Timer] desc=%v id %v-%v-%v Kill State", t.Desc, t.RegisterId, t.TimeWheelId, t.Id)
+	t.state = TimerKilledState
+	elog.DebugAf("[Timer] desc=%v id %v-%v-%v Kill State", t.desc, t.register_uid, t.uid, t.register_eid)
 }
 
 func (t *Timer) Call() {
 	defer func() {
 		if err := recover(); err != nil {
-			elog.ErrorAf("[Timer] func%v args:%v call err: %v", reflect.TypeOf(t.Cb).Name(), t.Args, err)
+			elog.ErrorAf("[Timer] func%v args:%v call err: %v", reflect.TypeOf(t.cb).Name(), t.args, err)
 		}
 	}()
 
-	t.Cb(t.Args...)
+	t.cb(t.args...)
 }
 
-func (t *Timer) GetRemainTime() uint64 {
-	remainTime := uint64(0)
-	if t.State != TimerRunningState {
-		return remainTime
+func (t *Timer) get_remain_time() uint64 {
+	remain_time := uint64(0)
+	if t.state != TimerRunningState {
+		return remain_time
 	}
 
-	curSlot := GTimerMgr.GetCurSlot()
-	if curSlot < t.Slot {
-		remainTime = uint64(t.Rotation)*MaxSlotSize + t.Slot - curSlot
+	cur_slot := GTimerMgr.GetCurSlot()
+	if cur_slot < t.slot {
+		remain_time = uint64(t.rotation)*MaxSlotSize + t.slot - cur_slot
 	} else {
-		remainTime = uint64(t.Rotation)*MaxSlotSize + (MaxSlotSize - curSlot + t.Slot)
+		remain_time = uint64(t.rotation)*MaxSlotSize + (MaxSlotSize - cur_slot + t.slot)
 	}
 
-	return remainTime
+	return remain_time
 }

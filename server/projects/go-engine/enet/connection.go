@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 )
 
-var GSendQps int64 = 0
-var GRecvQps int64 = 0
+//var GSendQps int64 = 0
+//var GRecvQps int64 = 0
 
 const (
 	ConnEstablishState uint32 = iota
@@ -17,113 +17,113 @@ const (
 )
 
 type Connection struct {
-	connID         uint64
-	net            inet.INet
-	conn           *net.TCPConn
-	msgChan        chan []byte
-	msgBuffChan    chan []byte
-	activeExitChan chan bool
-	session        inet.ISession
-	state          uint32
+	conn_id          uint64
+	net              inet.INet
+	conn             *net.TCPConn
+	msg_chan         chan []byte
+	msg_buff_chan    chan []byte
+	active_exit_chan chan bool
+	session          inet.ISession
+	state            uint32
 }
 
-func NewConnection(connID uint64, net inet.INet, conn *net.TCPConn, sess inet.ISession) *Connection {
+func NewConnection(conn_id uint64, net inet.INet, conn *net.TCPConn, sess inet.ISession) *Connection {
 	maxMsgChanSize := 500000
-	elog.InfoAf("[Net][Connection] ConnID=%v Attach SessID=%v", connID, sess.GetSessID())
+	elog.InfoAf("[Net][Connection] ConnID=%v Attach SessID=%v", conn_id, sess.GetSessID())
 	return &Connection{
-		connID:         connID,
-		net:            net,
-		conn:           conn,
-		session:        sess,
-		msgChan:        make(chan []byte),
-		msgBuffChan:    make(chan []byte, maxMsgChanSize),
-		activeExitChan: make(chan bool),
-		state:          ConnEstablishState,
+		conn_id:          conn_id,
+		net:              net,
+		conn:             conn,
+		session:          sess,
+		msg_chan:         make(chan []byte),
+		msg_buff_chan:    make(chan []byte, maxMsgChanSize),
+		active_exit_chan: make(chan bool),
+		state:            ConnEstablishState,
 	}
 }
 
 func (c *Connection) GetConnID() uint64 {
-	return c.connID
+	return c.conn_id
 }
 
 func (c *Connection) StartWriter() {
-	elog.InfoAf("[Net][Connection] ConnID=%v Write Goroutine Start", c.connID)
+	elog.InfoAf("[Net][Connection] ConnID=%v Write Goroutine Start", c.conn_id)
 
 	defer c.close(false)
-	activeExitflag := false
+	active_exit_flag := false
 	for {
-		if activeExitflag && len(c.msgChan) == 0 && len(c.msgBuffChan) == 0 {
-			elog.InfoAf("[Net][Connection] ConnID=%v Write Goroutine Active Exit", c.connID)
+		if active_exit_flag && len(c.msg_chan) == 0 && len(c.msg_buff_chan) == 0 {
+			elog.InfoAf("[Net][Connection] ConnID=%v Write Goroutine Active Exit", c.conn_id)
 			return
 		}
 
 		select {
-		case datas := <-c.msgChan:
+		case datas := <-c.msg_chan:
 			if _, err := c.conn.Write(datas); err != nil {
-				elog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Exit SendError=%v", c.connID, err)
+				elog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Exit SendError=%v", c.conn_id, err)
 				return
 			}
-		case datas, _ := <-c.msgBuffChan:
+		case datas, _ := <-c.msg_buff_chan:
 			if _, err := c.conn.Write(datas); err != nil {
-				elog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Exit SendBuffError=%v", c.connID, err)
+				elog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Exit SendBuffError=%v", c.conn_id, err)
 				return
 			}
-		case flag, _ := <-c.activeExitChan:
+		case flag, _ := <-c.active_exit_chan:
 			if !flag {
-				elog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Passive Exit", c.connID)
+				elog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Passive Exit", c.conn_id)
 				return
 			}
 
-			activeExitflag = true
+			active_exit_flag = true
 		}
 	}
 }
 
 func (c *Connection) StartReader() {
-	elog.InfoAf("[Net][Connection] ConnID=%v Read Goroutine Start", c.connID)
+	elog.InfoAf("[Net][Connection] ConnID=%v Read Goroutine Start", c.conn_id)
 	defer c.close(false)
 
 	for {
 		if atomic.LoadUint32(&c.state) == ConnClosedState {
-			elog.InfoAf("[Net][Connection] ConnID=%v Read Goroutine Exit", c.connID)
+			elog.InfoAf("[Net][Connection] ConnID=%v Read Goroutine Exit", c.conn_id)
 			return
 		}
 
 		coder := c.session.GetCoder()
-		headBytes := make([]byte, coder.GetHeaderLen())
-		if _, headErr := io.ReadFull(c.conn, headBytes); headErr != nil {
-			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit ReadFullError=%v", c.connID, headErr)
+		head_bytes := make([]byte, coder.GetHeaderLen())
+		if _, head_err := io.ReadFull(c.conn, head_bytes); head_err != nil {
+			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit ReadFullError=%v", c.conn_id, head_err)
 			return
 		}
 
-		bodylen, bodyLenErr := coder.GetBodyLen(headBytes)
-		if bodyLenErr != nil {
-			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit GetUnpackBodyLenError=%V", c.connID, bodyLenErr)
+		bodylen, bodylen_err := coder.GetBodyLen(head_bytes)
+		if bodylen_err != nil {
+			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit GetUnpackBodyLenError=%V", c.conn_id, bodylen_err)
 			return
 		}
 
-		bodyBytes := make([]byte, bodylen)
-		if _, bodyErr := io.ReadFull(c.conn, bodyBytes); bodyErr != nil {
-			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit ReadBodyError=%v", c.connID, bodyErr)
+		body_bytes := make([]byte, bodylen)
+		if _, body_err := io.ReadFull(c.conn, body_bytes); body_err != nil {
+			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit ReadBodyError=%v", c.conn_id, body_err)
 			return
 		}
 
-		decodeDatas, decodeErr := coder.DecodeBody(bodyBytes)
-		if decodeErr != nil {
-			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit DecodeBodyError=%v", c.connID, decodeErr)
+		decode_datas, decode_err := coder.DecodeBody(body_bytes)
+		if decode_err != nil {
+			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit DecodeBodyError=%v", c.conn_id, decode_err)
 			return
 		}
 
-		unzipDatas, unzipErr := coder.UnzipBody(decodeDatas)
-		if unzipErr != nil {
-			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit UnzipBodyError=%v", c.connID, unzipErr)
+		unzip_datas, unzip_err := coder.UnzipBody(decode_datas)
+		if unzip_err != nil {
+			elog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit UnzipBodyError=%v", c.conn_id, unzip_err)
 			return
 		}
 
-		msgEvent := NewEvent(inet.ConnRecvMsgType, c, unzipDatas)
-		c.net.PushEvent(msgEvent)
+		msg_event := NewEvent(inet.ConnRecvMsgType, c, unzip_datas)
+		c.net.PushEvent(msg_event)
 
-		atomic.AddInt64(&GRecvQps, 1)
+		//atomic.AddInt64(&GRecvQps, 1)
 	}
 }
 
@@ -148,11 +148,11 @@ func (c *Connection) close(terminate bool) {
 	c.net.PushEvent(closeEvent)
 
 	if terminate {
-		elog.InfoAf("[Net][Connection] ConnID=%v Active Closed", c.connID)
-		c.activeExitChan <- true
+		elog.InfoAf("[Net][Connection] ConnID=%v Active Closed", c.conn_id)
+		c.active_exit_chan <- true
 	} else {
-		elog.InfoAf("[Net][Connection] ConnID=%v Passive Closed", c.connID)
-		c.activeExitChan <- false
+		elog.InfoAf("[Net][Connection] ConnID=%v Passive Closed", c.conn_id)
+		c.active_exit_chan <- false
 	}
 }
 
@@ -164,17 +164,17 @@ func (c *Connection) OnClose() {
 
 func (c *Connection) Send(datas []byte) {
 	if atomic.LoadUint32(&c.state) != ConnEstablishState {
-		elog.WarnAf("[Net][Connection] ConnID=%v Send Error", c.connID)
+		elog.WarnAf("[Net][Connection] ConnID=%v Send Error", c.conn_id)
 		return
 	}
 
-	c.msgChan <- datas
-	atomic.AddInt64(&GSendQps, 1)
+	c.msg_chan <- datas
+	//atomic.AddInt64(&GSendQps, 1)
 }
 
 func (c *Connection) AsyncSend(datas []byte) {
-	c.msgBuffChan <- datas
-	atomic.AddInt64(&GSendQps, 1)
+	c.msg_buff_chan <- datas
+	//atomic.AddInt64(&GSendQps, 1)
 }
 
 func (c *Connection) GetSession() inet.ISession {

@@ -12,16 +12,16 @@ type ConnEvent struct {
 }
 
 type Net struct {
-	evtQueue  inet.IEventQueue
-	connMgr   inet.IConnectionMgr
-	connQueue chan ConnEvent
+	evt_queue  inet.IEventQueue
+	conn_mgr   inet.IConnectionMgr
+	conn_queue chan ConnEvent
 }
 
-func newNet() *Net {
+func new_net(max_evt_count uint32, max_conn_count uint32) *Net {
 	return &Net{
-		evtQueue:  NewEventQueue(4096),
-		connMgr:   NewConnectionMgr(),
-		connQueue: make(chan ConnEvent, 4096),
+		evt_queue:  new_event_queue(max_evt_count),
+		conn_mgr:   NewConnectionMgr(),
+		conn_queue: make(chan ConnEvent, max_conn_count),
 	}
 }
 
@@ -29,20 +29,20 @@ func (n *Net) Init() bool {
 	go func() {
 		for {
 			select {
-			case evt := <-n.connQueue:
+			case evt := <-n.conn_queue:
 				addr, err := net.ResolveTCPAddr("tcp4", evt.addr)
 				if err != nil {
 					elog.Errorf("[Net] Connect Addr=%v ResolveTCPAddr Error=%v", addr, err)
 					continue
 				}
 
-				netConn, err := net.DialTCP("tcp4", nil, addr)
-				if err != nil {
-					elog.Errorf("[Net] Connect Addr=%v DialTCP Error=%v", addr, err)
+				netConn, dial_err := net.DialTCP("tcp4", nil, addr)
+				if dial_err != nil {
+					elog.Errorf("[Net] Connect Addr=%v DialTCP Error=%v", addr, dial_err)
 					continue
 				}
 
-				conn := n.connMgr.Create(n, netConn, evt.sess)
+				conn := n.conn_mgr.Create(n, netConn, evt.sess)
 				go conn.Start()
 			}
 		}
@@ -56,51 +56,51 @@ func (n *Net) UnInit() {
 }
 
 func (n *Net) PushEvent(evt inet.IEvent) {
-	n.evtQueue.PushEvent(evt)
+	n.evt_queue.PushEvent(evt)
 }
 
-func (n *Net) Listen(addr string, factory inet.ISessionFactory, listenMaxCount int) bool {
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", addr)
+func (n *Net) Listen(addr string, factory inet.ISessionFactory, listen_max_count int) bool {
+	tcp_addr, err := net.ResolveTCPAddr("tcp4", addr)
 	if err != nil {
 		elog.Errorf("[Net] Addr=%v ResolveTCPAddr Error=%v", addr, err)
 		return false
 	}
 
-	listen, err := net.ListenTCP("tcp4", tcpAddr)
-	if err != nil {
-		elog.Errorf("[Net] Addr=%v ListenTCP Error=%v", tcpAddr, err)
+	listen, listen_err := net.ListenTCP("tcp4", tcp_addr)
+	if listen_err != nil {
+		elog.Errorf("[Net] Addr=%v ListenTCP Error=%v", tcp_addr, listen_err)
 		return false
 	}
 
-	elog.Infof("[Net] Addr=%v ListenTCP Success", tcpAddr)
+	elog.Infof("[Net] Addr=%v ListenTCP Success", tcp_addr)
 
-	go func(sessfactory inet.ISessionFactory, listen *net.TCPListener, listenMaxCount int) {
+	go func(sessfactory inet.ISessionFactory, listen *net.TCPListener, listen_max_count int) {
 		for {
-			netConn, err := listen.AcceptTCP()
-			if err != nil {
-				elog.ErrorAf("[Net] Accept Error=%v", err)
+			net_conn, accept_err := listen.AcceptTCP()
+			if accept_err != nil {
+				elog.ErrorAf("[Net] Accept Error=%v", accept_err)
 				continue
 			}
-			elog.InfoAf("[Net] Accept Remote Addr %v", netConn.RemoteAddr().String())
+			elog.InfoAf("[Net] Accept Remote Addr %v", net_conn.RemoteAddr().String())
 
-			if n.connMgr.GetConnCount() >= listenMaxCount {
+			if n.conn_mgr.GetConnCount() >= listen_max_count {
 				elog.ErrorA("[Net] Conn is Full")
-				netConn.Close()
+				net_conn.Close()
 				continue
 			}
 
 			session := sessfactory.CreateSession()
 			if session == nil {
 				elog.ErrorA("[Net] CreateSession Error")
-				netConn.Close()
+				net_conn.Close()
 				continue
 			}
 
-			conn := n.connMgr.Create(n, netConn, session)
+			conn := n.conn_mgr.Create(n, net_conn, session)
 			session.SetConnection(conn)
 			go conn.Start()
 		}
-	}(factory, listen, listenMaxCount)
+	}(factory, listen, listen_max_count)
 
 	return true
 }
@@ -110,18 +110,18 @@ func (n *Net) Connect(addr string, sess inet.ISession) {
 		addr: addr,
 		sess: sess,
 	}
-	n.connQueue <- connEvt
+	n.conn_queue <- connEvt
 }
 
 func (n *Net) Run(loop_count int) bool {
 	for i := 0; i < loop_count; i++ {
 		select {
-		case evt, ok := <-n.evtQueue.GetEventQueue():
+		case evt, ok := <-n.evt_queue.GetEventQueue():
 			if !ok {
 				return false
 			}
 
-			evtType := evt.GetType()
+			evt_type := evt.GetType()
 			conn := evt.GetConn()
 			if conn == nil {
 				elog.ErrorA("[Net] Run Conn Is Nil")
@@ -134,15 +134,15 @@ func (n *Net) Run(loop_count int) bool {
 				return false
 			}
 
-			if evtType == inet.ConnEstablishType {
+			if evt_type == inet.ConnEstablishType {
 				session.SetConnection(conn)
 				session.OnEstablish()
-			} else if evtType == inet.ConnRecvMsgType {
+			} else if evt_type == inet.ConnRecvMsgType {
 				datas := evt.GetDatas().([]byte)
 				session.ProcessMsg(datas)
-			} else if evtType == inet.ConnCloseType {
+			} else if evt_type == inet.ConnCloseType {
 				conn.OnClose()
-				n.connMgr.Remove(conn.GetConnID())
+				n.conn_mgr.Remove(conn.GetConnID())
 				session.SetConnection(nil)
 				session.OnTerminate()
 			}
@@ -159,5 +159,5 @@ func (n *Net) Run(loop_count int) bool {
 var GNet *Net
 
 func init() {
-	GNet = newNet()
+	GNet = new_net(1024*10, 60000)
 }

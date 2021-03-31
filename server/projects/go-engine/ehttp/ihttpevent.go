@@ -1,7 +1,7 @@
 package ehttp
 
 type IHttpConnection interface {
-	OnHandler(msgID uint32, datas []byte)
+	OnHandler(msg_id uint32, datas []byte)
 }
 
 type IHttpEvent interface {

@@ -23,12 +23,12 @@ type IServerFacade interface {
 }
 
 type Server struct {
-	terminate       bool
-	wg              sync.WaitGroup
-	localServerId   uint64
-	localServerType uint32
-	localIp         string
-	localToken      string
+	terminate         bool
+	wg                sync.WaitGroup
+	local_server_id   uint64
+	local_server_type uint32
+	local_ip          string
+	local_token       string
 }
 
 func (s *Server) IsQuit() bool {
@@ -41,19 +41,19 @@ func (s *Server) Quit() {
 }
 
 func (s *Server) GetLocalServerID() uint64 {
-	return s.localServerId
+	return s.local_server_id
 }
 
 func (s *Server) GetLocalToken() string {
-	return s.localToken
+	return s.local_token
 }
 
 func (s *Server) GetLocalServerType() uint32 {
-	return s.localServerType
+	return s.local_server_type
 }
 
 func (s *Server) GetLocalIp() string {
-	return s.localIp
+	return s.local_ip
 }
 
 func (s *Server) Init() bool {
@@ -64,10 +64,10 @@ func (s *Server) Init() bool {
 		return false
 	}
 
-	s.localServerId = GServerCfg.ServerId
-	s.localServerType = GServerCfg.serverType
-	s.localToken = GServerCfg.Token
-	s.localIp, _ = util.GetLocalIp()
+	s.local_server_id = GServerCfg.ServerId
+	s.local_server_type = GServerCfg.ServerType
+	s.local_token = GServerCfg.Token
+	s.local_ip, _ = util.GetLocalIp()
 
 	//Log
 	elog.Init(GServerCfg.LogDir, GServerCfg.LogLevel, func(i ...interface{}) {
@@ -94,7 +94,7 @@ func (s *Server) Init() bool {
 	}
 
 	//Uid
-	idMaker, idErr := NewIdMaker(int64(s.localServerId))
+	idMaker, idErr := NewIdMaker(int64(s.local_server_id))
 	if idErr != nil {
 		elog.Errorf("Server IdMaker Error=%v", idMaker)
 		return false

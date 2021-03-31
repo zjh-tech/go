@@ -8,11 +8,12 @@ const (
 )
 
 type IMysqlConn interface {
-	AddComand(command IMysqlCommand)
 	QueryWithResult(sql string) (IMysqlRecordSet, error)
 	QueryWithoutResult(sql string) (IMysqlRecordSet, error)
 	FindSqlDb() *sql.DB
 	BeginTransact()
 	CommitTransact()
 	RollbackTransact()
+
+	AddComand(command IMysqlCommand)
 }

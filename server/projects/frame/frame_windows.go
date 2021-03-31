@@ -9,33 +9,33 @@ import (
 )
 
 func (s *SignalDealer) RegisterSigHandler() {
-	signal.Notify(s.SignalChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(s.signal_chan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 }
 
 func (s *SignalDealer) ListenSignal() {
 	go func() {
 		for {
-			signal := <-s.SignalChan
+			signal := <-s.signal_chan
 			switch signal {
 			case syscall.SIGINT:
 				{
 					elog.Info("HANDLE SIGINT SIGNAL")
-					if s.quitDealer != nil {
-						s.quitDealer.Quit()
+					if s.quit_dealer != nil {
+						s.quit_dealer.Quit()
 					}
 				}
 			case syscall.SIGTERM:
 				{
 					elog.Info("HANDLE SIGTERM SIGNAL")
-					if s.quitDealer != nil {
-						s.quitDealer.Quit()
+					if s.quit_dealer != nil {
+						s.quit_dealer.Quit()
 					}
 				}
 			case syscall.SIGQUIT:
 				{
 					elog.Info("HANDLE SIGQUIT SIGNAL")
-					if s.quitDealer != nil {
-						s.quitDealer.Quit()
+					if s.quit_dealer != nil {
+						s.quit_dealer.Quit()
 					}
 				}
 			default:

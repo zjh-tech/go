@@ -17,53 +17,61 @@ type RedisConnSpec struct {
 }
 
 type RedisModule struct {
-	connMaxCount uint64
-	conns        map[uint64]*RedisConn
+	conn_max_count uint64
+	conns          map[uint64]*RedisConn
 }
 
-func (r *RedisModule) Init(connMaxCount uint64, connSpecs []*RedisConnSpec) error {
-	r.connMaxCount = connMaxCount
+func new_redis_module() *RedisModule {
+	redis_module := &RedisModule{
+		conn_max_count: 0,
+		conns:          make(map[uint64]*RedisConn),
+	}
+	return redis_module
+}
 
-	if r.connMaxCount == 0 {
+func (r *RedisModule) Init(conn_max_count uint64, conn_specs []*RedisConnSpec) error {
+	r.conn_max_count = conn_max_count
+
+	if r.conn_max_count == 0 {
 		return errors.New("[Redis][RedisModule] No Connect")
 	}
 
-	if r.connMaxCount != uint64(len(connSpecs)) {
+	if r.conn_max_count != uint64(len(conn_specs)) {
 		return errors.New("[Redis][RedisModule] No Match")
 	}
 
-	for i := uint64(0); i < r.connMaxCount; i++ {
-		redisNameSlices := strings.Split(connSpecs[i].Name, "_")
-		if len(redisNameSlices) != 2 {
+	for i := uint64(0); i < r.conn_max_count; i++ {
+		redis_name_slices := strings.Split(conn_specs[i].Name, "_")
+		if len(redis_name_slices) != 2 {
 			return errors.New("[Redis][RedisModule] Index Error")
 		}
 
-		redisIndex, _ := util.Str2Uint64(redisNameSlices[1])
+		redis_index, _ := util.Str2Uint64(redis_name_slices[1])
 
-		if redisIndex >= connMaxCount {
+		if redis_index >= conn_max_count {
 			return errors.New("[Redis][RedisModule] Redis Index Error")
 		}
 
-		if _, ok := r.conns[redisIndex]; ok {
+		if _, ok := r.conns[redis_index]; ok {
 			return errors.New("[Redis][RedisModule] Redis Index Repeat Error")
 		}
 
-		redisConn := NewRedisConn()
-		if err := redisConn.Connect(connSpecs[i]); err != nil {
+		redis_conn := new_redis_conn()
+		if err := redis_conn.connect(conn_specs[i]); err != nil {
 			elog.ErrorAf("[Redis][RedisModule] Connect Error=%v", err)
 			return err
 		}
-		r.conns[redisIndex] = redisConn
+		r.conns[redis_index] = redis_conn
 	}
 
 	return nil
 }
 
 func (r *RedisModule) GetRedisClient(uid uint64) redis.Client {
-	index := uid % r.connMaxCount
-	//elog.InfoAf("[Redis][RedisModule] UId=%v Index=%v RedisName=redis_%v", uid, index, index)
+	index := uid % r.conn_max_count
+	elog.InfoAf("[Redis][RedisModule] UId=%v Index=%v RedisName=redis_%v", uid, index, index)
 	if conn, ok := r.conns[index]; ok {
-		return conn.GetRedisClient()
+		return conn.get_redis_client()
 	}
 	return nil
 }
@@ -71,8 +79,5 @@ func (r *RedisModule) GetRedisClient(uid uint64) redis.Client {
 var GRedisModule *RedisModule
 
 func init() {
-	GRedisModule = &RedisModule{
-		connMaxCount: 0,
-		conns:        make(map[uint64]*RedisConn),
-	}
+	GRedisModule = new_redis_module()
 }
