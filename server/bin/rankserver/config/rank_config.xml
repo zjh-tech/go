@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-
-<!-- Id=唯一标志  FuncDesc=功能描述 RankSize=榜总大小 -->
-<config>
-	<rank Id="0"  FuncDesc="等级榜"  RankSize="7" />
-</config>
-
