@@ -3,9 +3,9 @@ package main
 import (
 	"math"
 	"projects/frame"
-	"projects/go-engine/elog"
-	"projects/go-engine/enet"
-	"projects/go-engine/etimer"
+	"projects/engine/elog"
+	"projects/engine/enet"
+	"projects/engine/etimer"
 	"time"
 )
 

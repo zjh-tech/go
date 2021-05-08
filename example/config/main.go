@@ -2,7 +2,7 @@ package main
 
 import (
 	"projects/config"
-	"projects/go-engine/elog"
+	"projects/engine/elog"
 	"time"
 )
 

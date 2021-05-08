@@ -4,7 +4,7 @@ import (
 	"errors"
 	"projects/base/convert"
 	"projects/base/etree"
-	"projects/go-engine/eredis"
+	"projects/engine/eredis"
 )
 
 type RedisCfgMgr struct {

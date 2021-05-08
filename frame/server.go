@@ -3,12 +3,12 @@ package frame
 import (
 	"math/rand"
 	"projects/base/util"
-	"projects/go-engine/ecommon"
-	"projects/go-engine/edb"
-	"projects/go-engine/elog"
-	"projects/go-engine/enet"
-	"projects/go-engine/eredis"
-	"projects/go-engine/etimer"
+	"projects/engine/ecommon"
+	"projects/engine/edb"
+	"projects/engine/elog"
+	"projects/engine/enet"
+	"projects/engine/eredis"
+	"projects/engine/etimer"
 	"time"
 
 	"github.com/google/gops/agent"

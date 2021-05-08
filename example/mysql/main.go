@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"projects/base/util"
 	"projects/frame"
-	"projects/go-engine/edb"
-	"projects/go-engine/elog"
-	"projects/go-engine/etimer"
+	"projects/engine/edb"
+	"projects/engine/elog"
+	"projects/engine/etimer"
 	"time"
 )
 

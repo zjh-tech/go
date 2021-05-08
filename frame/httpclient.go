@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"projects/base/util"
-	"projects/go-engine/enet"
+	"projects/engine/enet"
 	"time"
 
 	"github.com/golang/protobuf/proto"

@@ -2,8 +2,8 @@ package main
 
 import (
 	"projects/frame"
-	"projects/go-engine/elog"
-	"projects/go-engine/etimer"
+	"projects/engine/elog"
+	"projects/engine/etimer"
 	"projects/pb"
 
 	"github.com/golang/protobuf/proto"

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"projects/base/convert"
 	"projects/base/etree"
-	"projects/go-engine/edb"
+	"projects/engine/edb"
 )
 
 type DatabaseCfgMgr struct {

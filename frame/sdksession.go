@@ -3,8 +3,8 @@ package frame
 import (
 	"math"
 	"projects/base/util"
-	"projects/go-engine/enet"
-	"projects/go-engine/etimer"
+	"projects/engine/enet"
+	"projects/engine/etimer"
 	"projects/pb"
 
 	"github.com/golang/protobuf/proto"

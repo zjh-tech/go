@@ -5,8 +5,8 @@ import (
 	"projects/base/convert"
 	"projects/base/util"
 	"projects/frame"
-	"projects/go-engine/elog"
-	"projects/go-engine/eredis"
+	"projects/engine/elog"
+	"projects/engine/eredis"
 	"time"
 )
 

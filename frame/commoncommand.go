@@ -1,7 +1,7 @@
 package frame
 
 import (
-	"projects/go-engine/edb"
+	"projects/engine/edb"
 )
 
 type ExecSqlFunc func(conn edb.IMysqlConn, attach []interface{}) (edb.IMysqlRecordSet, int32, error)

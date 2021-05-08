@@ -1,7 +1,7 @@
 package frame
 
 import (
-	"projects/go-engine/edb"
+	"projects/engine/edb"
 )
 
 //同步
