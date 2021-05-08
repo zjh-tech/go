@@ -1,4 +1,4 @@
-module go
+module github.com/zjh-tech/go
 
 go 1.14
 
