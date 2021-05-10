@@ -2,9 +2,10 @@ package frame
 
 import (
 	"math"
-	"projects/engine/enet"
-	"projects/engine/etimer"
-	"projects/frame/framepb"
+
+	"github.com/zjh-tech/go-frame/engine/enet"
+	"github.com/zjh-tech/go-frame/engine/etimer"
+	"github.com/zjh-tech/go-frame/frame/framepb"
 
 	"github.com/golang/protobuf/proto"
 )

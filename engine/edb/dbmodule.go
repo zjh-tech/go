@@ -3,8 +3,9 @@ package edb
 import (
 	"errors"
 	"fmt"
-	"projects/base/convert"
 	"strings"
+
+	"github.com/zjh-tech/go-frame/base/convert"
 )
 
 type DBModule struct {

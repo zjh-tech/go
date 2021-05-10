@@ -3,7 +3,8 @@ package frame
 import (
 	"bytes"
 	"encoding/binary"
-	"projects/engine/enet"
+
+	"github.com/zjh-tech/go-frame/engine/enet"
 
 	"github.com/golang/protobuf/proto"
 )

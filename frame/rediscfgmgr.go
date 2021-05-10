@@ -2,9 +2,10 @@ package frame
 
 import (
 	"errors"
-	"projects/base/convert"
-	"projects/base/etree"
-	"projects/engine/eredis"
+
+	"github.com/zjh-tech/go-frame/base/convert"
+	"github.com/zjh-tech/go-frame/base/etree"
+	"github.com/zjh-tech/go-frame/engine/eredis"
 )
 
 type RedisCfgMgr struct {

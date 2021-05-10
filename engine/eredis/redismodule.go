@@ -2,8 +2,9 @@ package eredis
 
 import (
 	"errors"
-	"projects/base/convert"
 	"strings"
+
+	"github.com/zjh-tech/go-frame/base/convert"
 
 	redis "github.com/alphazero/Go-Redis"
 )

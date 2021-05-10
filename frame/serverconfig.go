@@ -2,8 +2,9 @@ package frame
 
 import (
 	"errors"
-	"projects/base/convert"
-	"projects/base/etree"
+
+	"github.com/zjh-tech/go-frame/base/convert"
+	"github.com/zjh-tech/go-frame/base/etree"
 )
 
 type ServerCfg struct {

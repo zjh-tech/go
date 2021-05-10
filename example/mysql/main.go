@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"projects/base/util"
-	"projects/engine/edb"
-	"projects/engine/elog"
-	"projects/engine/etimer"
-	"projects/frame"
 	"time"
+
+	"github.com/zjh-tech/go-frame/base/util"
+	"github.com/zjh-tech/go-frame/engine/edb"
+	"github.com/zjh-tech/go-frame/engine/elog"
+	"github.com/zjh-tech/go-frame/engine/etimer"
+	"github.com/zjh-tech/go-frame/frame"
 )
 
 //CREATE TABLE `account_00` (

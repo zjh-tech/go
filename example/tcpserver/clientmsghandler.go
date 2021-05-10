@@ -1,8 +1,8 @@
 package main
 
 import (
-	"projects/engine/etimer"
-	"projects/frame"
+	"github.com/zjh-tech/go-frame/engine/etimer"
+	"github.com/zjh-tech/go-frame/frame"
 )
 
 type GameClientFunc func(datas []byte, sess *frame.CSSession) bool

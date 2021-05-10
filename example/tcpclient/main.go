@@ -1,11 +1,12 @@
 package main
 
 import (
-	"projects/engine/elog"
-	"projects/engine/enet"
-	"projects/engine/etimer"
-	"projects/frame"
 	"time"
+
+	"github.com/zjh-tech/go-frame/engine/elog"
+	"github.com/zjh-tech/go-frame/engine/enet"
+	"github.com/zjh-tech/go-frame/engine/etimer"
+	"github.com/zjh-tech/go-frame/frame"
 )
 
 type TcpClient struct {

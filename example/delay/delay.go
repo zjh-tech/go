@@ -1,9 +1,10 @@
 package main
 
 import (
-	"projects/engine/elog"
-	"projects/frame"
 	"time"
+
+	"github.com/zjh-tech/go-frame/engine/elog"
+	"github.com/zjh-tech/go-frame/frame"
 )
 
 func main() {

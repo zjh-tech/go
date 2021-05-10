@@ -1,8 +1,9 @@
 package main
 
 import (
-	"projects/engine/elog"
 	"time"
+
+	"github.com/zjh-tech/go-frame/engine/elog"
 )
 
 func main() {

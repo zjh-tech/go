@@ -2,14 +2,15 @@ package frame
 
 import (
 	"math/rand"
-	"projects/base/util"
-	"projects/engine/ecommon"
-	"projects/engine/edb"
-	"projects/engine/elog"
-	"projects/engine/enet"
-	"projects/engine/eredis"
-	"projects/engine/etimer"
 	"time"
+
+	"github.com/zjh-tech/go-frame/base/util"
+	"github.com/zjh-tech/go-frame/engine/ecommon"
+	"github.com/zjh-tech/go-frame/engine/edb"
+	"github.com/zjh-tech/go-frame/engine/elog"
+	"github.com/zjh-tech/go-frame/engine/enet"
+	"github.com/zjh-tech/go-frame/engine/eredis"
+	"github.com/zjh-tech/go-frame/engine/etimer"
 
 	"github.com/google/gops/agent"
 )

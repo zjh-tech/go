@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	"io/ioutil"
 	"net/http"
-	"projects/base/util"
-	"projects/engine/enet"
 	"time"
+
+	"github.com/zjh-tech/go-frame/base/util"
+	"github.com/zjh-tech/go-frame/engine/enet"
 
 	"github.com/golang/protobuf/proto"
 )

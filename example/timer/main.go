@@ -1,9 +1,9 @@
 package main
 
 import (
-	"projects/engine/elog"
-	"projects/engine/etimer"
-	"projects/frame"
+	"github.com/zjh-tech/go-frame/engine/elog"
+	"github.com/zjh-tech/go-frame/engine/etimer"
+	"github.com/zjh-tech/go-frame/frame"
 )
 
 type TimerID int32

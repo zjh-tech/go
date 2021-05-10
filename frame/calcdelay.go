@@ -2,8 +2,9 @@ package frame
 
 import (
 	"math"
-	"projects/base/util"
 	"time"
+
+	"github.com/zjh-tech/go-frame/base/util"
 )
 
 const (

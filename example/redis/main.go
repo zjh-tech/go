@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"projects/base/convert"
-	"projects/base/util"
-	"projects/engine/elog"
-	"projects/engine/eredis"
-	"projects/frame"
 	"time"
+
+	"github.com/zjh-tech/go-frame/base/convert"
+	"github.com/zjh-tech/go-frame/base/util"
+	"github.com/zjh-tech/go-frame/engine/elog"
+	"github.com/zjh-tech/go-frame/engine/eredis"
+	"github.com/zjh-tech/go-frame/frame"
 )
 
 func main() {
