@@ -1,4 +1,4 @@
-module go-frame
+module github.com/zjh-tech/go-frame
 
 go 1.14
 
