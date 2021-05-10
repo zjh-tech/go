@@ -1,0 +1,62 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<config>
+	<whitelist>127.0.0.1</whitelist>
+	<!-- Port Spec -->
+	<!-- gops port random-->
+	<!-- 0~1023 IANA -->
+	<!-- 1024~49151  -->
+	<!-- 49152~65535 -->
+
+	<servertype>
+		<!-- ServerID Spec -->
+		<!-- serverid must in range 1~4095	-->
+		<server type="register"  	enum="1"/>  <!-- 100~199 -->
+		<server type="login"  		enum="2"/>	<!-- 200~299 -->
+		<server type="gate"   		enum="3"/>	<!-- 300~399 -->
+		<server type="center"   	enum="4"/>	<!-- 400~499 -->		
+		<server type="match"   		enum="5"/>	<!-- 500~599 --> 
+		<server type="hall"   		enum="6"/>	<!-- 600~1099 -->
+		<server type="battle"   	enum="7"/>	<!-- 1100~1599 -->
+		<server type="db"   	    enum="8"/>	<!-- 1600~1699 -->
+	</servertype>
+
+	<connection>		
+		<server start="gate"      end="login,hall"/>
+		<server start="db"        end="hall"/>
+		<server start="center"    end="hall"/>
+		<server start="match"     end="hall"/>		
+	</connection>
+
+	<s2slist>
+		<!--client login  gate port 2000~3499-->
+		<server id="100" type="register"/>
+		<server id="200" type="login"    inter="127.0.0.1:2000"  outer="127.0.0.1:2000" token="123456" necessary="yes"/>
+		<server id="300" type="gate" token="123456" necessary="yes"/>
+		<server id="400" type="center" token="123456" necessary="yes"/>
+		
+		<server id="600" type="hall"     inter="127.0.0.1:2002"  outer="127.0.0.1:2002" token="123456" necessary="yes"/>		
+		<server id="1100" type="battle"  token="123456" necessary="yes"/>
+		<server id="1600" type="db" token="123456" necessary="yes"/>
+	</s2slist>
+	
+	<externservertype>
+		<server type="global"  	enum="1"/>  
+		<server type="bill"     enum="2"/>	
+		<server type="match"  	enum="3"/>  
+		<server type="battle"   enum="4"/>
+	</externservertype>
+	
+	<externlist>		
+		<server id="500" type="match"    inter="127.0.0.1:2001"  outer="127.0.0.1:2001" token="123456" necessary="yes"/>		
+	</externlist>
+
+	<c2slist>				
+		<!--login https prot spec-->
+		<!-- 200 : 3000 -->
+		<server id="200" type="login"	https_url="localhost:3000" https_cert="" https_key=""/>
+
+		<!-- gate client net listen port sepc : 3500~3999 -->
+		<server id="300" type="gate"	inter="127.0.0.1:3500"  outer="127.0.0.1:3500" maxcount="20000"/>
+	</c2slist>
+</config>
