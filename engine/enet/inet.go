@@ -25,7 +25,13 @@ type ICoder interface {
 	ZipBody(datas []byte) ([]byte, bool)
 	UnzipBody(datas []byte) ([]byte, error)
 
+	ProcessMsg(datas []byte, sess ISession)
+
 	FillNetStream(datas []byte) ([]byte, error)
+}
+
+type ISessionOnHandler interface {
+	OnHandler(msgID uint32, datas []byte)
 }
 
 type IEventQueue interface {
@@ -66,11 +72,11 @@ type ISession interface {
 
 	OnTerminate()
 
-	ProcessMsg(datas []byte)
-
 	GetCoder() ICoder
 
 	SetCoder(coder ICoder)
+
+	GetSessionOnHandler() ISessionOnHandler
 
 	IsListenType() bool
 

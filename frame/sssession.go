@@ -58,7 +58,7 @@ func NewSSSession() *SSSession {
 		last_beat_heart_time: util.GetMillsecond(),
 	}
 	session.SetListenType()
-	session.Session.SessionOnHandler = session
+	session.Session.ISessionOnHandler = session
 	return session
 }
 

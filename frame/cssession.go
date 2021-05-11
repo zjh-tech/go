@@ -43,7 +43,7 @@ func NewCSSession(handler ICSMsgHandler) *CSSession {
 	}
 
 	sess.SetListenType()
-	sess.Session.SessionOnHandler = sess
+	sess.Session.ISessionOnHandler = sess
 	return sess
 }
 

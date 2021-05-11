@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+
+	"github.com/zjh-tech/go-frame/engine/enet"
 )
 
 const (
@@ -67,7 +69,26 @@ func (c *Coder) UnzipBody(datas []byte) ([]byte, error) {
 	if c.msg_header.EncodeFlag == false {
 		return datas, nil
 	}
+
 	return nil, errors.New("UnzipBody Error")
+}
+
+func (c *Coder) ProcessMsg(datas []byte, sess enet.ISession) {
+	if len(datas) < PackageMsgIDLen {
+		ELog.ErrorAf("[Session] SesssionID=%v ProcessMsg Len Error", sess.GetSessID())
+		return
+	}
+
+	buff := bytes.NewBuffer(datas)
+	msg_id := uint32(0)
+	if err := binary.Read(buff, binary.BigEndian, &msg_id); err != nil {
+		ELog.ErrorAf("[Session] SesssionID=%v ProcessMsg MsgID Error=%v", sess.GetSessID(), err)
+		return
+	}
+
+	ELog.DebugAf("ConnID=%v,SessionID=%v,MsgID=%v", msg_id)
+	msg_start_index := PackageMsgIDLen + 2
+	sess.GetSessionOnHandler().OnHandler(msg_id, datas[msg_start_index:])
 }
 
 func (c *Coder) FillNetStream(datas []byte) ([]byte, error) {

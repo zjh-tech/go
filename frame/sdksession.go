@@ -48,7 +48,7 @@ func NewSDKSession(handler ISdkMsgHandler) *SDKSession {
 		timer_register:       etimer.NewTimerRegister(),
 	}
 	sess.SetListenType()
-	sess.Session.SessionOnHandler = sess
+	sess.Session.ISessionOnHandler = sess
 	return sess
 }
 

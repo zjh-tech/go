@@ -154,7 +154,7 @@ func (n *Net) Run(loop_count int) bool {
 				session.OnEstablish()
 			} else if evt_type == ConnRecvMsgType {
 				datas := tcp_evt.GetDatas().([]byte)
-				session.ProcessMsg(datas)
+				session.GetCoder().ProcessMsg(datas, session)
 			} else if evt_type == ConnCloseType {
 				conn.OnClose()
 				n.conn_mgr.Remove(conn.GetConnID())
