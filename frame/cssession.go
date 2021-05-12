@@ -139,6 +139,10 @@ func (c *CSSessionMgr) FindSession(id uint64) enet.ISession {
 	return nil
 }
 
+func (c *CSSessionMgr) GetSessionCount() int {
+	return len(c.sess_map)
+}
+
 func (c *CSSessionMgr) RemoveSession(id uint64) {
 	if _, ok := c.sess_map[id]; ok {
 		delete(c.sess_map, id)

@@ -2,6 +2,7 @@ package enet
 
 import (
 	"net"
+	"runtime"
 )
 
 type ConnEvent struct {
@@ -12,16 +13,16 @@ type ConnEvent struct {
 type Net struct {
 	evt_queue      IEventQueue
 	http_evt_queue IEventQueue
-	conn_mgr       IConnectionMgr
 	conn_queue     chan ConnEvent
+	multi_flag     bool
 }
 
 func new_net(max_evt_count uint32, max_conn_count uint32) *Net {
 	return &Net{
 		evt_queue:      new_event_queue(max_evt_count),
 		http_evt_queue: new_event_queue(max_conn_count),
-		conn_mgr:       NewConnectionMgr(),
 		conn_queue:     make(chan ConnEvent, max_conn_count),
+		multi_flag:     false,
 	}
 }
 
@@ -42,7 +43,7 @@ func (n *Net) Init() bool {
 					continue
 				}
 
-				conn := n.conn_mgr.Create(n, netConn, evt.sess)
+				conn := GConnectionMgr.Create(n, netConn, evt.sess)
 				go conn.Start()
 			}
 		}
@@ -55,8 +56,21 @@ func (n *Net) UnInit() {
 	ELog.Info("[Net] Stop")
 }
 
+func (n *Net) SetMultiProcessMsg() {
+	n.multi_flag = true
+	if GMsgHandlerPool == nil {
+		chan_size := 100000
+		GMsgHandlerPool = NewMsgHandlerPool(runtime.NumCPU(), chan_size)
+		GMsgHandlerPool.Init()
+	}
+}
+
 func (n *Net) PushEvent(evt IEvent) {
-	n.evt_queue.PushEvent(evt)
+	if n.multi_flag {
+		GMsgHandlerPool.PushEvent(evt)
+	} else {
+		n.evt_queue.PushEvent(evt)
+	}
 }
 
 func (n *Net) PushSingleHttpEvent(http_evt IHttpEvent) {
@@ -64,13 +78,7 @@ func (n *Net) PushSingleHttpEvent(http_evt IHttpEvent) {
 }
 
 func (n *Net) PushMultiHttpEvent(http_evt IHttpEvent) {
-	conn := http_evt.GetHttpConnection()
-	if conn == nil {
-		ELog.ErrorA("[Net] PushMultiHttpEvent Run HttpConnection Is Nil")
-		return
-	}
-
-	conn.OnHandler(http_evt.GetMsgID(), http_evt.GetDatas())
+	http_evt.ProcessMsg()
 }
 
 func (n *Net) Listen(addr string, factory ISessionFactory, listen_max_count int) bool {
@@ -97,7 +105,7 @@ func (n *Net) Listen(addr string, factory ISessionFactory, listen_max_count int)
 			}
 			ELog.InfoAf("[Net] Accept Remote Addr %v", net_conn.RemoteAddr().String())
 
-			if n.conn_mgr.GetConnCount() >= listen_max_count {
+			if sessfactory.GetSessionCount() >= listen_max_count {
 				ELog.ErrorA("[Net] Conn is Full")
 				net_conn.Close()
 				continue
@@ -110,7 +118,7 @@ func (n *Net) Listen(addr string, factory ISessionFactory, listen_max_count int)
 				continue
 			}
 
-			conn := n.conn_mgr.Create(n, net_conn, session)
+			conn := GConnectionMgr.Create(n, net_conn, session)
 			session.SetConnection(conn)
 			go conn.Start()
 		}
@@ -136,47 +144,13 @@ func (n *Net) Run(loop_count int) bool {
 				return false
 			}
 
-			evt_type := tcp_evt.GetType()
-			conn := tcp_evt.GetConn()
-			if conn == nil {
-				ELog.ErrorA("[Net] Run Conn Is Nil")
-				return false
-			}
-
-			session := conn.GetSession()
-			if session == nil {
-				ELog.ErrorA("[Net] Run Session Is Nil")
-				return false
-			}
-
-			if evt_type == ConnEstablishType {
-				session.SetConnection(conn)
-				session.OnEstablish()
-			} else if evt_type == ConnRecvMsgType {
-				datas := tcp_evt.GetDatas().([]byte)
-				session.GetCoder().ProcessMsg(datas, session)
-			} else if evt_type == ConnCloseType {
-				conn.OnClose()
-				n.conn_mgr.Remove(conn.GetConnID())
-				session.SetConnection(nil)
-				session.OnTerminate()
-			}
-
-			return true
+			return tcp_evt.ProcessMsg()
 		case evt, ok := <-n.http_evt_queue.GetEventQueue():
 			if !ok {
 				return false
 			}
 			http_evt := evt.(*HttpEvent)
-
-			conn := http_evt.GetHttpConnection()
-			if conn == nil {
-				ELog.ErrorA("[Net] PushSingleHttpEvent Run HttpConnection Is Nil")
-				return false
-			}
-
-			conn.OnHandler(http_evt.GetMsgID(), http_evt.GetDatas())
-			return true
+			return http_evt.ProcessMsg()
 		default:
 			return false
 		}

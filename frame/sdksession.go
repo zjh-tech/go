@@ -3,12 +3,11 @@ package frame
 import (
 	"math"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/zjh-tech/go-frame/base/util"
 	"github.com/zjh-tech/go-frame/engine/enet"
 	"github.com/zjh-tech/go-frame/engine/etimer"
 	"github.com/zjh-tech/go-frame/frame/framepb"
-
-	"github.com/golang/protobuf/proto"
 )
 
 type ISdkMsgHandler interface {
@@ -181,6 +180,10 @@ func (s *SDKSessionMgr) FindSession(id uint64) enet.ISession {
 	return nil
 }
 
+func (s *SDKSessionMgr) GetSessionCount() int {
+	return len(s.sess_map)
+}
+
 func (s *SDKSessionMgr) AddSession(session enet.ISession) {
 	s.sess_map[session.GetSessID()] = session
 	if info, ok := s.cache_map[session.GetSessID()]; ok {
@@ -190,9 +193,7 @@ func (s *SDKSessionMgr) AddSession(session enet.ISession) {
 }
 
 func (s *SDKSessionMgr) RemoveSession(id uint64) {
-	if _, ok := s.sess_map[id]; ok {
-		delete(s.sess_map, id)
-	}
+	delete(s.sess_map, id)
 }
 
 func (s *SDKSessionMgr) Count() int {

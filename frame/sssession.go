@@ -154,16 +154,14 @@ func (s *SSSession) OnTerminate() {
 	} else {
 		ELog.InfoAf("[SSSession] SessID=%v [ID=%v,Type=%v,Ip=%v] Terminate", s.sess_id, s.remoteServerID, s.remoteServerType, s.remoteOuter)
 	}
-
 	s.timerRegister.KillAllTimer()
 	factory := s.GetSessionFactory()
 	ssserverfactory := factory.(*SSSessionMgr)
 	ssserverfactory.RemoveSession(s.sess_id)
-	if s.sessState == SESS_ESTABLISH_STATE {
-		s.logicServer.SetServerSession(nil)
-		s.logicServer.OnTerminate(s)
-	}
+	s.logicServer.SetServerSession(nil)
 	s.sessState = SESS_CLOSE_STATE
+
+	s.logicServer.OnTerminate(s)
 }
 
 func (s *SSSession) OnHandler(msgID uint32, datas []byte) {
@@ -308,6 +306,10 @@ func (s *SSSessionMgr) FindSession(id uint64) enet.ISession {
 		return sess
 	}
 	return nil
+}
+
+func (s *SSSessionMgr) GetSessionCount() int {
+	return len(s.sess_map)
 }
 
 func (s *SSSessionMgr) IsInConnectCache(serverID uint64) bool {

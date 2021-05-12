@@ -15,16 +15,34 @@ func NewTcpEvent(t uint32, c IConnection, datas interface{}) *TcpEvent {
 	}
 }
 
-func (t *TcpEvent) GetType() uint32 {
-	return t.event_type
-}
-
 func (t *TcpEvent) GetConn() IConnection {
 	return t.conn
 }
 
-func (t *TcpEvent) GetDatas() interface{} {
-	return t.datas
+func (t *TcpEvent) ProcessMsg() bool {
+	if t.conn == nil {
+		ELog.ErrorA("[Net] Run Conn Is Nil")
+		return false
+	}
+
+	session := t.conn.GetSession()
+	if session == nil {
+		ELog.ErrorA("[Net] Run Session Is Nil")
+		return false
+	}
+
+	if t.event_type == ConnEstablishType {
+		session.SetConnection(t.conn)
+		session.OnEstablish()
+	} else if t.event_type == ConnRecvMsgType {
+		datas := t.datas.([]byte)
+		session.GetCoder().ProcessMsg(datas, session)
+	} else if t.event_type == ConnCloseType {
+		GConnectionMgr.Remove(t.conn.GetConnID())
+		session.SetConnection(nil)
+		session.OnTerminate()
+	}
+	return true
 }
 
 //Http
@@ -42,13 +60,12 @@ func NewHttpEvent(http_conn IHttpConnection, msg_id uint32, datas []byte) *HttpE
 	}
 }
 
-func (h *HttpEvent) GetHttpConnection() IHttpConnection {
-	return h.http_conn
-}
-func (h *HttpEvent) GetMsgID() uint32 {
-	return h.msg_id
-}
+func (h *HttpEvent) ProcessMsg() bool {
+	if h.http_conn == nil {
+		ELog.ErrorA("[Net] PushSingleHttpEvent Run HttpConnection Is Nil")
+		return false
+	}
 
-func (h *HttpEvent) GetDatas() []byte {
-	return h.datas
+	h.http_conn.OnHandler(h.msg_id, h.datas)
+	return true
 }

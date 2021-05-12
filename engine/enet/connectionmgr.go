@@ -42,3 +42,9 @@ func (c *ConnectionMgr) GetConnCount() int {
 
 	return len(c.conns)
 }
+
+var GConnectionMgr *ConnectionMgr
+
+func init() {
+	GConnectionMgr = NewConnectionMgr()
+}

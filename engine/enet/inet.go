@@ -7,6 +7,7 @@ import (
 )
 
 type INet interface {
+	SetMultiProcessMsg()
 	PushEvent(IEvent)
 	PushSingleHttpEvent(IHttpEvent)
 	PushMultiHttpEvent(IHttpEvent)
@@ -47,7 +48,6 @@ type IConnection interface {
 	Send(datas []byte)
 	AsyncSend(datas []byte)
 	Terminate()
-	OnClose()
 }
 
 type IConnectionMgr interface {
@@ -57,9 +57,8 @@ type IConnectionMgr interface {
 }
 
 type IEvent interface {
-	GetType() uint32
 	GetConn() IConnection
-	GetDatas() interface{}
+	ProcessMsg() bool
 }
 
 //ISession
@@ -103,6 +102,7 @@ type ISessionFactory interface {
 	CreateSession() ISession
 	AddSession(session ISession)
 	RemoveSession(id uint64)
+	GetSessionCount() int
 }
 
 //Http
@@ -111,7 +111,5 @@ type IHttpConnection interface {
 }
 
 type IHttpEvent interface {
-	GetHttpConnection() IHttpConnection
-	GetMsgID() uint32
-	GetDatas() []byte
+	ProcessMsg() bool
 }

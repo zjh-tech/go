@@ -4,31 +4,32 @@ import (
 	"io"
 	"net"
 	"sync/atomic"
+	"time"
 )
 
 type Connection struct {
-	conn_id          uint64
-	net              INet
-	conn             *net.TCPConn
-	msg_chan         chan []byte
-	msg_buff_chan    chan []byte
-	active_exit_chan chan bool
-	session          ISession
-	state            uint32
+	conn_id       uint64
+	net           INet
+	conn          *net.TCPConn
+	msg_chan      chan []byte
+	msg_buff_chan chan []byte
+	exit_chan     chan struct{}
+	session       ISession
+	state         uint32
 }
 
 func NewConnection(conn_id uint64, net INet, conn *net.TCPConn, sess ISession) *Connection {
 	max_msg_chan_size := 500000
 	ELog.InfoAf("[Net][Connection] ConnID=%v Attach SessID=%v", conn_id, sess.GetSessID())
 	return &Connection{
-		conn_id:          conn_id,
-		net:              net,
-		conn:             conn,
-		session:          sess,
-		msg_chan:         make(chan []byte),
-		msg_buff_chan:    make(chan []byte, max_msg_chan_size),
-		active_exit_chan: make(chan bool),
-		state:            ConnEstablishState,
+		conn_id:       conn_id,
+		net:           net,
+		conn:          conn,
+		session:       sess,
+		msg_chan:      make(chan []byte),
+		msg_buff_chan: make(chan []byte, max_msg_chan_size),
+		exit_chan:     make(chan struct{}),
+		state:         ConnEstablishState,
 	}
 }
 
@@ -40,13 +41,7 @@ func (c *Connection) StartWriter() {
 	ELog.InfoAf("[Net][Connection] ConnID=%v Write Goroutine Start", c.conn_id)
 
 	defer c.close(false)
-	active_exit_flag := false
 	for {
-		if active_exit_flag && len(c.msg_chan) == 0 && len(c.msg_buff_chan) == 0 {
-			ELog.InfoAf("[Net][Connection] ConnID=%v Write Goroutine Active Exit", c.conn_id)
-			return
-		}
-
 		select {
 		case datas := <-c.msg_chan:
 			if _, err := c.conn.Write(datas); err != nil {
@@ -59,13 +54,11 @@ func (c *Connection) StartWriter() {
 				ELog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Exit SendBuffError=%v", c.conn_id, err)
 				return
 			}
-		case flag, _ := <-c.active_exit_chan:
-			if !flag {
-				ELog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Passive Exit", c.conn_id)
+		case <-c.exit_chan:
+			{
+				ELog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine  Exit", c.conn_id)
 				return
 			}
-
-			active_exit_flag = true
 		}
 	}
 }
@@ -139,21 +132,46 @@ func (c *Connection) close(terminate bool) {
 		return
 	}
 
-	closeEvent := NewTcpEvent(ConnCloseType, c, nil)
-	c.net.PushEvent(closeEvent)
+	closeEvent := NewTcpEvent(ConnCloseType, c, terminate)
+	c.net.PushEvent(closeEvent) //业务logci处理CloseEvent
 
 	if terminate {
+		//主动断开
 		ELog.InfoAf("[Net][Connection] ConnID=%v Active Closed", c.conn_id)
-		c.active_exit_chan <- true
+		go func() {
+			//等待发完所有消息或者超时后,关闭底层read,write
+			close_timer := time.NewTicker(100 * time.Millisecond)
+			defer close_timer.Stop()
+
+			close_timeout_timer := time.NewTimer(60 * time.Second)
+			defer close_timeout_timer.Stop()
+			for {
+				select {
+				case <-close_timer.C:
+					{
+						if len(c.msg_chan) <= 0 && len(c.msg_buff_chan) <= 0 {
+							c.on_close()
+						}
+					}
+				case <-close_timeout_timer.C:
+					{
+						c.on_close()
+						return
+					}
+				}
+			}
+		}()
 	} else {
+		//被动断开
 		ELog.InfoAf("[Net][Connection] ConnID=%v Passive Closed", c.conn_id)
-		c.active_exit_chan <- false
+		c.on_close()
 	}
 }
 
-func (c *Connection) OnClose() {
+func (c *Connection) on_close() {
 	if c.conn != nil {
-		c.conn.Close()
+		c.exit_chan <- struct{}{} //close writer Goroutine
+		c.conn.Close()            //close reader Goroutine
 	}
 }
 
