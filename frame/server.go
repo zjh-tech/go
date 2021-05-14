@@ -2,6 +2,7 @@ package frame
 
 import (
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/zjh-tech/go-frame/base/util"
@@ -26,6 +27,7 @@ type IServerFacade interface {
 }
 
 type Server struct {
+	config_path       string
 	terminate         bool
 	local_server_id   uint64
 	local_server_type uint32
@@ -63,10 +65,21 @@ func (s *Server) GetLogger() *elog.Logger {
 	return s.logger
 }
 
+func (s *Server) GetConfigPath() string {
+	return s.config_path
+}
+
 func (s *Server) Init() bool {
+	config_path := ""
+	if len(os.Args) == 2 {
+		config_path = os.Args[1]
+	}
+
+	s.config_path = config_path
 	s.terminate = false
 
-	err := ReadServerCfg("./server_cfg.xml")
+	server_cfg_path := s.GetConfigPath() + "/server_cfg.xml"
+	err := ReadServerCfg(server_cfg_path)
 	if err != nil {
 		return false
 	}

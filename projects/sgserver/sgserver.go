@@ -25,7 +25,7 @@ func (s *SGServer) Init() bool {
 	}
 	ELog.Info("RegistryServer Net Init Success")
 
-	service_registry_path := "./service_registry.xml"
+	service_registry_path := s.GetConfigPath() + "/service_registry.xml"
 	cfg, err := ReadRegistryCfg(service_registry_path)
 	if err != nil {
 		ELog.Errorf("RegistryServer ReadRegistryCfg Error=%v", err)
