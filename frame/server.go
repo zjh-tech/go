@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/gops/agent"
 	"github.com/zjh-tech/go-frame/base/util"
 	"github.com/zjh-tech/go-frame/engine/ecommon"
 	"github.com/zjh-tech/go-frame/engine/edb"
@@ -12,8 +13,6 @@ import (
 	"github.com/zjh-tech/go-frame/engine/enet"
 	"github.com/zjh-tech/go-frame/engine/eredis"
 	"github.com/zjh-tech/go-frame/engine/etimer"
-
-	"github.com/google/gops/agent"
 )
 
 type IServerFacade interface {
@@ -70,7 +69,7 @@ func (s *Server) GetConfigPath() string {
 }
 
 func (s *Server) Init() bool {
-	config_path := ""
+	config_path := "."
 	if len(os.Args) == 2 {
 		config_path = os.Args[1]
 	}
@@ -79,9 +78,10 @@ func (s *Server) Init() bool {
 	s.terminate = false
 
 	server_cfg_path := s.GetConfigPath() + "/server_cfg.xml"
-	err := ReadServerCfg(server_cfg_path)
-	if err != nil {
+	if server_cfg, read_err := ReadServerCfg(server_cfg_path); read_err != nil {
 		return false
+	} else {
+		GServerCfg = server_cfg
 	}
 
 	s.local_server_id = GServerCfg.ServerId

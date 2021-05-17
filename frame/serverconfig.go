@@ -50,79 +50,77 @@ type ServerCfg struct {
 	SDKHttpsKey  string
 }
 
-var GServerCfg *ServerCfg
-
-func init() {
-	GServerCfg = &ServerCfg{
-		C2SInterListen: "",
-		C2SOuterListen: "",
-	}
+func NewServerCfg() *ServerCfg {
+	return &ServerCfg{}
 }
 
-func ReadServerCfg(path string) error {
+var GServerCfg *ServerCfg
+
+func ReadServerCfg(path string) (*ServerCfg, error) {
 	doc := etree.NewDocument()
 	err := doc.ReadFromFile(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	//config
 	cfg_root := doc.SelectElement("config")
 	if cfg_root == nil {
-		return errors.New("server_cfg Xml Config Error")
+		return nil, errors.New("server_cfg Xml Config Error")
 	}
+
+	cfg := NewServerCfg()
 
 	servicename_elem := cfg_root.FindElement("servicename")
 	if servicename_elem != nil {
-		GServerCfg.ServiceName = servicename_elem.Text()
+		cfg.ServiceName = servicename_elem.Text()
 	}
 
 	servertype_elem := cfg_root.FindElement("servertype")
 	if servertype_elem != nil {
-		GServerCfg.ServerType, _ = convert.Str2Uint32(servertype_elem.Text())
+		cfg.ServerType, _ = convert.Str2Uint32(servertype_elem.Text())
 	}
 
 	serverid_elem := cfg_root.FindElement("serverid")
 	if serverid_elem != nil {
-		GServerCfg.ServerId, _ = convert.Str2Uint64(serverid_elem.Text())
+		cfg.ServerId, _ = convert.Str2Uint64(serverid_elem.Text())
 	}
 
 	token_elem := cfg_root.FindElement("token")
 	if token_elem != nil {
-		GServerCfg.Token = token_elem.Text()
+		cfg.Token = token_elem.Text()
 	}
 
 	logdir_elem := cfg_root.FindElement("logdir")
 	if logdir_elem == nil {
-		return errors.New("Log Dir Error")
+		return nil, errors.New("Log Dir Error")
 	}
-	GServerCfg.LogDir = logdir_elem.Text()
+	cfg.LogDir = logdir_elem.Text()
 
 	loglevel_elem := cfg_root.FindElement("loglevel")
 	if loglevel_elem == nil {
-		return errors.New("Log Level Error")
+		return nil, errors.New("Log Level Error")
 	}
-	GServerCfg.LogLevel, _ = convert.Str2Int(loglevel_elem.Text())
+	cfg.LogLevel, _ = convert.Str2Int(loglevel_elem.Text())
 
 	sdclient_addr_elem := cfg_root.FindElement("sdclient_addr")
 	if sdclient_addr_elem != nil {
-		GServerCfg.SDClientAddr = sdclient_addr_elem.Text()
+		cfg.SDClientAddr = sdclient_addr_elem.Text()
 	}
 
 	sdserver_addr_elem := cfg_root.FindElement("sdserver_addr")
 	if sdserver_addr_elem != nil {
-		GServerCfg.SDServerAddr = sdserver_addr_elem.Text()
+		cfg.SDServerAddr = sdserver_addr_elem.Text()
 	}
 
 	sdclient_url_elem := cfg_root.FindElement("sdclient_url")
 	if sdclient_url_elem != nil {
-		GServerCfg.SDClientUrl = sdclient_url_elem.Text()
+		cfg.SDClientUrl = sdclient_url_elem.Text()
 	}
 
 	sdserverurl_elem := cfg_root.FindElement("sdserver_url")
 	if sdserverurl_elem != nil {
-		GServerCfg.SDServerUrl = sdserverurl_elem.Text()
+		cfg.SDServerUrl = sdserverurl_elem.Text()
 	}
 
-	return nil
+	return cfg, nil
 }

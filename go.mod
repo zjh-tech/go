@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/alphazero/Go-Redis v0.0.0-20120924171622-a0637b154364
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.4.3
 	github.com/google/gops v0.3.14
 	github.com/prometheus/common v0.24.0

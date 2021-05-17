@@ -190,6 +190,7 @@ func (m *S2SClientSessionPong) String() string            { return proto.Compact
 func (*S2SClientSessionPong) ProtoMessage()               {}
 func (*S2SClientSessionPong) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
+// ------------sg-------------
 type SdConnAttr struct {
 	ServerId      uint64 `protobuf:"varint,1,opt,name=server_id,json=serverId" json:"server_id,omitempty"`
 	ServerType    uint32 `protobuf:"varint,2,opt,name=server_type,json=serverType" json:"server_type,omitempty"`

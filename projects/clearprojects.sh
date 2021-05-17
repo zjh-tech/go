@@ -9,6 +9,7 @@ ulimit -c unlimited
 
 for serv in $SERVERLIST
 do 
+	rm -rf $serv/log
 	rm -rf $ProjectBinPath/$serv/core.*
 	rm -rf $ProjectBinPath/$serv/log
 	rm -rf $ProjectBinPath/$serv/$serv
