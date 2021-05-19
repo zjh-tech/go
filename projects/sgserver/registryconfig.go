@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/beevik/etree"
 	"github.com/zjh-tech/go-frame/base/convert"
-	"github.com/zjh-tech/go-frame/base/etree"
 )
 
 type ConnAttr struct {

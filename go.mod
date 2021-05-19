@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/alphazero/Go-Redis v0.0.0-20120924171622-a0637b154364
-	github.com/beevik/etree v1.1.0 // indirect
+	github.com/beevik/etree v1.1.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
