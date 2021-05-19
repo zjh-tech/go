@@ -62,7 +62,7 @@ func NewHttpEvent(http_conn IHttpConnection, msg_id uint32, datas []byte) *HttpE
 
 func (h *HttpEvent) ProcessMsg() bool {
 	if h.http_conn == nil {
-		ELog.ErrorA("[Net] PushSingleHttpEvent Run HttpConnection Is Nil")
+		ELog.ErrorA("[Net] ProcessMsg Run HttpConnection Is Nil")
 		return false
 	}
 
