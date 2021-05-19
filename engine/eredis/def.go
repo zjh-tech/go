@@ -2,13 +2,6 @@ package eredis
 
 import "fmt"
 
-type RedisConnSpec struct {
-	Name     string
-	Host     string
-	Port     int
-	Password string
-}
-
 const RedisMajorVersion = 1
 const RedisMinorVersion = 1
 
