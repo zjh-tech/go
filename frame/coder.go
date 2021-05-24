@@ -91,7 +91,7 @@ func (c *Coder) ProcessMsg(datas []byte, sess enet.ISession) {
 	sess.GetSessionOnHandler().OnHandler(msg_id, datas[msg_start_index:])
 }
 
-func (c *Coder) FillNetStream(datas []byte) ([]byte, error) {
+func (c *Coder) FillNetStream(msgID uint32, datas []byte) ([]byte, error) {
 	encodeDatas, encodeflag := c.EnCodeBody(datas)
 	zipDatas, zipflag := c.ZipBody(encodeDatas)
 

@@ -104,17 +104,17 @@ func (s *Session) AsyncSendMsg(msgID uint32, datas []byte) bool {
 		return false
 	}
 
-	if err := binary.Write(buff, binary.BigEndian, uint16(0)); err != nil {
-		ELog.ErrorAf("[Session] SesssionID=%v  AsyncSendMsg Attach Len Error=%v", s.GetSessID(), err)
-		return false
-	}
+	// if err := binary.Write(buff, binary.BigEndian, uint16(0)); err != nil {
+	// 	ELog.ErrorAf("[Session] SesssionID=%v  AsyncSendMsg Attach Len Error=%v", s.GetSessID(), err)
+	// 	return false
+	// }
 
-	if datas != nil {
-		if err := binary.Write(buff, binary.BigEndian, datas); err != nil {
-			ELog.ErrorAf("[Session] SesssionID=%v  AsyncSendMsg  Datas Error=%v", s.GetSessID(), err)
-			return false
-		}
-	}
+	// if datas != nil {
+	// 	if err := binary.Write(buff, binary.BigEndian, datas); err != nil {
+	// 		ELog.ErrorAf("[Session] SesssionID=%v  AsyncSendMsg  Datas Error=%v", s.GetSessID(), err)
+	// 		return false
+	// 	}
+	// }
 
 	all_datas, err := s.coder.FillNetStream(buff.Bytes())
 	if err != nil {

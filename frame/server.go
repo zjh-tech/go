@@ -99,9 +99,7 @@ func (s *Server) Init() bool {
 	rand.Seed(time.Now().UnixNano())
 
 	//Signal
-	GSignalDealer.RegisterSigHandler()
-	GSignalDealer.SetSignalQuitDealer(s)
-	GSignalDealer.ListenSignal()
+	GSignalDealer.Init(s)
 	ELog.Info("Server Signal System Init Success")
 
 	if s.GetLocalServerType() == 0 {

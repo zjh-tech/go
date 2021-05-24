@@ -1,4 +1,3 @@
-// +build windows
 package frame
 
 import (
@@ -16,15 +15,11 @@ type SignalDealer struct {
 	quit_dealer ISignalQuitDealer
 }
 
-func (s *SignalDealer) SetSignalQuitDealer(dealer ISignalQuitDealer) {
+func (s *SignalDealer) Init(dealer ISignalQuitDealer) {
 	s.quit_dealer = dealer
-}
 
-func (s *SignalDealer) RegisterSigHandler() {
 	signal.Notify(s.signal_chan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-}
 
-func (s *SignalDealer) ListenSignal() {
 	go func() {
 		for {
 			signal := <-s.signal_chan
@@ -57,6 +52,7 @@ func (s *SignalDealer) ListenSignal() {
 			}
 		}
 	}()
+
 }
 
 var GSignalDealer *SignalDealer
