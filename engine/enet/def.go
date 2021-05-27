@@ -23,6 +23,11 @@ const (
 	ConnClosedState
 )
 
+const (
+	MsgSuccess uint32 = 0
+	MsgFail    uint32 = 1
+)
+
 const NetMajorVersion = 1
 const NetMinorVersion = 1
 

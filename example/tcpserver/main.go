@@ -23,7 +23,7 @@ func (t *TcpServer) Init() bool {
 
 	GClientMsgHandler.Init()
 
-	if frame.GCSSessionMgr.Listen("127.0.0.1:2000", GClientMsgHandler, nil, math.MaxUint16) == false {
+	if enet.GCSSessionMgr.Listen("127.0.0.1:2000", GClientMsgHandler, nil, math.MaxUint16) == false {
 		return false
 	}
 

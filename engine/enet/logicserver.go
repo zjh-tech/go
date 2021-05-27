@@ -1,4 +1,4 @@
-package frame
+package enet
 
 type IServerMsgHandler interface {
 	OnHandler(msgId uint32, datas []byte, sess *SSSession)

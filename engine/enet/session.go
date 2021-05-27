@@ -1,21 +1,20 @@
-package frame
+package enet
 
 import (
 	"github.com/golang/protobuf/proto"
-	"github.com/zjh-tech/go-frame/engine/enet"
 )
 
 type Session struct {
-	enet.ISessionOnHandler
-	conn     enet.IConnection
+	ISessionOnHandler
+	conn     IConnection
 	sessId   uint64
 	attach   interface{}
-	coder    enet.ICoder
-	sessType enet.SessionType
-	factory  enet.ISessionFactory
+	coder    ICoder
+	sessType SessionType
+	factory  ISessionFactory
 }
 
-func (s *Session) SetConnection(conn enet.IConnection) {
+func (s *Session) SetConnection(conn IConnection) {
 	s.conn = conn
 }
 
@@ -35,20 +34,20 @@ func (s *Session) SetAttach(attach interface{}) {
 	s.attach = attach
 }
 
-func (s *Session) GetCoder() enet.ICoder {
+func (s *Session) GetCoder() ICoder {
 	return s.coder
 }
 
-func (s *Session) SetCoder(coder enet.ICoder) {
+func (s *Session) SetCoder(coder ICoder) {
 	s.coder = coder
 }
 
-func (s *Session) GetSessionOnHandler() enet.ISessionOnHandler {
+func (s *Session) GetSessionOnHandler() ISessionOnHandler {
 	return s.ISessionOnHandler
 }
 
 func (s *Session) IsListenType() bool {
-	if s.sessType == enet.SessListenType {
+	if s.sessType == SessListenType {
 		return true
 	} else {
 		return false
@@ -56,7 +55,7 @@ func (s *Session) IsListenType() bool {
 }
 
 func (s *Session) IsConnectType() bool {
-	if s.sessType == enet.SessConnectType {
+	if s.sessType == SessConnectType {
 		return true
 	} else {
 		return false
@@ -64,18 +63,18 @@ func (s *Session) IsConnectType() bool {
 }
 
 func (s *Session) SetConnectType() {
-	s.sessType = enet.SessConnectType
+	s.sessType = SessConnectType
 }
 
 func (s *Session) SetListenType() {
-	s.sessType = enet.SessListenType
+	s.sessType = SessListenType
 }
 
-func (s *Session) SetSessionFactory(factory enet.ISessionFactory) {
+func (s *Session) SetSessionFactory(factory ISessionFactory) {
 	s.factory = factory
 }
 
-func (s *Session) GetSessionFactory() enet.ISessionFactory {
+func (s *Session) GetSessionFactory() ISessionFactory {
 	return s.factory
 }
 

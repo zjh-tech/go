@@ -1,14 +1,14 @@
 package main
 
 import (
+	"github.com/zjh-tech/go-frame/engine/enet"
 	"github.com/zjh-tech/go-frame/engine/etimer"
-	"github.com/zjh-tech/go-frame/frame"
 )
 
-type GameClientFunc func(datas []byte, sess *frame.CSSession) bool
+type GameClientFunc func(datas []byte, sess *enet.CSSession) bool
 
 type ClientMsgHandler struct {
-	dealer        *frame.IDDealer
+	dealer        *enet.IDDealer
 	timerRegister etimer.ITimerRegister
 	Qps           uint64
 }
@@ -25,7 +25,7 @@ func (c *ClientMsgHandler) Init() bool {
 	return true
 }
 
-func (c *ClientMsgHandler) OnHandler(msgId uint32, datas []byte, sess *frame.CSSession) {
+func (c *ClientMsgHandler) OnHandler(msgId uint32, datas []byte, sess *enet.CSSession) {
 	defer func() {
 		if err := recover(); err != nil {
 			ELog.ErrorAf("ClientMsgHandler onHandler MsgID = %v Error=%v", msgId, err)
@@ -39,19 +39,19 @@ func (c *ClientMsgHandler) OnHandler(msgId uint32, datas []byte, sess *frame.CSS
 	}
 }
 
-func (c *ClientMsgHandler) OnConnect(sess *frame.CSSession) {
+func (c *ClientMsgHandler) OnConnect(sess *enet.CSSession) {
 
 }
 
-func (c *ClientMsgHandler) OnDisconnect(sess *frame.CSSession) {
+func (c *ClientMsgHandler) OnDisconnect(sess *enet.CSSession) {
 
 }
 
-func (c *ClientMsgHandler) OnBeatHeartError(sess *frame.CSSession) {
+func (c *ClientMsgHandler) OnBeatHeartError(sess *enet.CSSession) {
 
 }
 
-func OnHandlerCsTestReq(datas []byte, sess *frame.CSSession) bool {
+func OnHandlerCsTestReq(datas []byte, sess *enet.CSSession) bool {
 	// req := pb.CsGameLoginReq{}
 	// unmarshalErr := proto.Unmarshal(datas, &req)
 	// if unmarshalErr != nil {
@@ -73,6 +73,6 @@ var GClientMsgHandler *ClientMsgHandler
 
 func init() {
 	GClientMsgHandler = &ClientMsgHandler{
-		dealer: frame.NewIDDealer(),
+		dealer: enet.NewIDDealer(),
 	}
 }

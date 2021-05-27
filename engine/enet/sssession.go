@@ -1,11 +1,11 @@
-package frame
+package enet
 
 import (
 	"encoding/json"
+	"math"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/zjh-tech/go-frame/base/util"
-	"github.com/zjh-tech/go-frame/engine/enet"
 	"github.com/zjh-tech/go-frame/engine/etimer"
 )
 
@@ -38,7 +38,7 @@ const (
 	SSOnceConnectMaxTime        = 1000 * 10
 )
 
-type LocalSessionSpec struct {
+type VerifySessionSpec struct {
 	ServerID      uint64
 	ServerType    uint32
 	ServerTypeStr string
@@ -58,8 +58,9 @@ type SSSession struct {
 	timerRegister     etimer.ITimerRegister
 	sessState         uint32
 	lastBeatHeartTime int64
-	localSpec         LocalSessionSpec
+	verifySpec        VerifySessionSpec
 	remoteSpec        RemoteSessionSpec
+	localToken        string
 	logicServer       ILogicServer
 }
 
@@ -75,12 +76,16 @@ func NewSSSession() *SSSession {
 }
 
 //------------------------------------------------------------
-func (s *SSSession) SetLocalSpec(localSpec LocalSessionSpec) {
-	s.localSpec = localSpec
+func (s *SSSession) SetVerifySpec(verifySpec VerifySessionSpec) {
+	s.verifySpec = verifySpec
 }
 
 func (s *SSSession) SetRemoteSpec(remoteSpec RemoteSessionSpec) {
 	s.remoteSpec = remoteSpec
+}
+
+func (s *SSSession) SetLocalToken(token string) {
+	s.localToken = token
 }
 
 func (s *SSSession) GetRemoteServerID() uint64 {
@@ -102,11 +107,11 @@ func (s *SSSession) OnEstablish() {
 	if s.IsConnectType() {
 		ELog.InfoAf("[SSSession] Remote [ID=%v,Type=%v,Ip=%v] Establish Send Verify Req", s.remoteSpec.ServerID, s.remoteSpec.ServerType, s.remoteSpec.Ip)
 		req := &S2SSessionVerifyReq{
-			ServerId:      s.localSpec.ServerID,
-			ServerType:    s.localSpec.ServerType,
-			ServerTypeStr: s.localSpec.ServerTypeStr,
-			Ip:            s.localSpec.Ip,
-			Token:         s.localSpec.Token,
+			ServerId:      s.verifySpec.ServerID,
+			ServerType:    s.verifySpec.ServerType,
+			ServerTypeStr: s.verifySpec.ServerTypeStr,
+			Ip:            s.verifySpec.Ip,
+			Token:         s.verifySpec.Token,
 		}
 
 		datas, marshalErr := json.Marshal(req)
@@ -192,8 +197,7 @@ func (s *SSSession) OnHandler(msgId uint32, datas []byte) {
 		remoteSpec.Ip = verifyReq.Ip
 		s.SetRemoteSpec(remoteSpec)
 
-		//if verifyReq.Token != eutil.Md5([]byte(GServer.GetLocalToken())) {
-		if verifyReq.Token != GServer.GetLocalToken() {
+		if verifyReq.Token != s.localToken {
 			ELog.ErrorAf("[SSSession] Remote [ID=%v,Type=%v,Ip=%v] Recv Verify Error", s.remoteSpec.ServerID, s.remoteSpec.ServerType, s.remoteSpec.Ip)
 			VerifyResFunc(MsgFail)
 			return
@@ -238,13 +242,15 @@ type SSSessionCache struct {
 
 type SSSessionMgr struct {
 	nextId             uint64
-	sessMap            map[uint64]enet.ISession
+	sessMap            map[uint64]ISession
 	logicServerFactory ILogicServerFactory
 	timerRegister      etimer.ITimerRegister
 	connectingCache    map[uint64]*SSSessionCache
+	token              string
 }
 
-func (s *SSSessionMgr) Init() {
+func (s *SSSessionMgr) Init(token string) {
+	s.token = token
 	s.timerRegister.AddRepeatTimer(SSMgrOutputTimerId, SSMgrOutputTimerDelay, "SSSessionMgr-OutPut", func(v ...interface{}) {
 		now := util.GetMillsecond()
 		for _, session := range s.sessMap {
@@ -261,10 +267,11 @@ func (s *SSSessionMgr) Init() {
 	}, []interface{}{}, true)
 }
 
-func (s *SSSessionMgr) CreateSession() enet.ISession {
+func (s *SSSessionMgr) CreateSession() ISession {
 	sess := NewSSSession()
 	sess.SetSessID(s.nextId)
 	sess.SetCoder(NewCoder())
+	sess.SetLocalToken(s.token)
 	sess.SetSessionFactory(s)
 	s.nextId++
 	ELog.InfoAf("[SSSessionMgr] CreateSession SessID=%v", sess.GetSessID())
@@ -283,7 +290,7 @@ func (s *SSSessionMgr) FindLogicServerByServerType(serverType uint32) []ILogicSe
 	return sessArray
 }
 
-func (s *SSSessionMgr) FindSessionByServerId(serverId uint64) enet.ISession {
+func (s *SSSessionMgr) FindSessionByServerId(serverId uint64) ISession {
 	for _, session := range s.sessMap {
 		serversess := session.(*SSSession)
 		if serversess.remoteSpec.ServerID == serverId {
@@ -294,7 +301,7 @@ func (s *SSSessionMgr) FindSessionByServerId(serverId uint64) enet.ISession {
 	return nil
 }
 
-func (s *SSSessionMgr) FindSession(id uint64) enet.ISession {
+func (s *SSSessionMgr) FindSession(id uint64) ISession {
 	if id == 0 {
 		return nil
 	}
@@ -314,9 +321,9 @@ func (s *SSSessionMgr) IsInConnectCache(serverID uint64) bool {
 	return ok
 }
 
-func (s *SSSessionMgr) AddSession(session enet.ISession) {
-	s.sessMap[session.GetSessID()] = session
-	serversess := session.(*SSSession)
+func (s *SSSessionMgr) AddSession(sess ISession) {
+	s.sessMap[sess.GetSessID()] = sess
+	serversess := sess.(*SSSession)
 	if _, ok := s.connectingCache[serversess.GetRemoteServerID()]; ok {
 		ELog.InfoAf("[SSSessionMgr] AddSession Triggle ConnectCache Del ServerId=%v,ServerType=%v", serversess.GetRemoteServerID(), serversess.GetRemoteServerType())
 
@@ -421,7 +428,7 @@ func (s *SSSessionMgr) GetSessionIdByHashIdAndSrvType(hashId uint64, serverType 
 	return sessionId
 }
 
-func (s *SSSessionMgr) SSServerConnect(localSpec LocalSessionSpec, remoteSepc RemoteSessionSpec) {
+func (s *SSSessionMgr) SSServerConnect(verifySpec VerifySessionSpec, remoteSepc RemoteSessionSpec) {
 	session := s.CreateSession()
 	if session != nil {
 		cache := &SSSessionCache{
@@ -434,12 +441,16 @@ func (s *SSSessionMgr) SSServerConnect(localSpec LocalSessionSpec, remoteSepc Re
 		ELog.InfoAf("[SSSessionMgr]ConnectCache Add ServerId=%v,ServerType=%v", remoteSepc.ServerID, remoteSepc.ServerTypeStr)
 
 		serverSession := session.(*SSSession)
-		serverSession.SetLocalSpec(localSpec)
+		serverSession.SetVerifySpec(verifySpec)
 		serverSession.SetRemoteSpec(remoteSepc)
 
 		serverSession.SetConnectType()
-		enet.GNet.Connect(remoteSepc.Ip, serverSession)
+		GNet.Connect(remoteSepc.Ip, serverSession)
 	}
+}
+
+func (s *SSSessionMgr) SSServerListen(addr string) bool {
+	return GNet.Listen(addr, s, math.MaxInt32)
 }
 
 var GSSSessionMgr *SSSessionMgr
@@ -447,7 +458,7 @@ var GSSSessionMgr *SSSessionMgr
 func init() {
 	GSSSessionMgr = &SSSessionMgr{
 		nextId:          1,
-		sessMap:         make(map[uint64]enet.ISession),
+		sessMap:         make(map[uint64]ISession),
 		timerRegister:   etimer.NewTimerRegister(),
 		connectingCache: make(map[uint64]*SSSessionCache),
 	}

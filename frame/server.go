@@ -133,7 +133,7 @@ func (s *Server) Init() bool {
 	}
 
 	GServer = s
-	GSSSessionMgr.Init()
+	enet.GSSSessionMgr.Init(s.GetLocalIp())
 
 	return true
 }

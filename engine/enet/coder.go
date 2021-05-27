@@ -1,11 +1,9 @@
-package frame
+package enet
 
 import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-
-	"github.com/zjh-tech/go-frame/engine/enet"
 )
 
 const (
@@ -74,7 +72,7 @@ func (c *Coder) UnzipBody(datas []byte) ([]byte, error) {
 	return nil, errors.New("UnzipBody Error")
 }
 
-func (c *Coder) ProcessMsg(datas []byte, sess enet.ISession) {
+func (c *Coder) ProcessMsg(datas []byte, sess ISession) {
 	if len(datas) < PackageMsgIDLen {
 		ELog.ErrorAf("[Session] SesssionID=%v ProcessMsg Len Error", sess.GetSessID())
 		return

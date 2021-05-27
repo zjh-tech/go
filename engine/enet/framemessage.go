@@ -1,4 +1,4 @@
-package frame
+package enet
 
 const (
 	S2SEngineMinMsgId = 1

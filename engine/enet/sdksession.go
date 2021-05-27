@@ -1,11 +1,10 @@
-package frame
+package enet
 
 import (
 	"math"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/zjh-tech/go-frame/base/util"
-	"github.com/zjh-tech/go-frame/engine/enet"
 	"github.com/zjh-tech/go-frame/engine/etimer"
 )
 
@@ -104,9 +103,9 @@ func (s *SDKSession) OnHandler(msgId uint32, datas []byte) {
 }
 
 type SCClientSessionCache struct {
-	session_id   uint64
-	addr         string
-	connect_tick int64
+	sessionId   uint64
+	addr        string
+	connectTick int64
 }
 
 const (
@@ -119,45 +118,45 @@ const (
 
 type SDKSessionMgr struct {
 	nextId        uint64
-	sessMap       map[uint64]enet.ISession
+	sessMap       map[uint64]ISession
 	handler       ISdkMsgHandler
-	coder         enet.ICoder
-	cache_map     map[uint64]*SCClientSessionCache
+	coder         ICoder
+	cacheMap      map[uint64]*SCClientSessionCache
 	timerRegister etimer.ITimerRegister
 }
 
 func NewSDKSessionMgr() *SDKSessionMgr {
 	return &SDKSessionMgr{
 		nextId:        1,
-		sessMap:       make(map[uint64]enet.ISession),
+		sessMap:       make(map[uint64]ISession),
 		timerRegister: etimer.NewTimerRegister(),
-		cache_map:     make(map[uint64]*SCClientSessionCache),
+		cacheMap:      make(map[uint64]*SCClientSessionCache),
 	}
 }
 
 func (s *SDKSessionMgr) Init() {
 	s.timerRegister.AddRepeatTimer(SDK_MGR_CACHE_TIMER_ID, SDK_MGR_CACHE_TIMER_DELAY, "SDKSessionMgr-Cache", func(v ...interface{}) {
 		now := util.GetMillsecond()
-		for sessionID, cache := range s.cache_map {
-			if cache.connect_tick < now {
-				ELog.InfoAf("[SDKSessionMgr] Timeout Triggle  ConnectCache Del SesssionID=%v,Addr=%v", cache.session_id, cache.addr)
-				delete(s.cache_map, sessionID)
+		for sessionID, cache := range s.cacheMap {
+			if cache.connectTick < now {
+				ELog.InfoAf("[SDKSessionMgr] Timeout Triggle  ConnectCache Del SesssionID=%v,Addr=%v", cache.sessionId, cache.addr)
+				delete(s.cacheMap, sessionID)
 			}
 		}
 	}, []interface{}{}, true)
 }
 
-func (s *SDKSessionMgr) IsInConnectCache(session_id uint64) bool {
-	_, ok := s.cache_map[session_id]
+func (s *SDKSessionMgr) IsInConnectCache(sessionId uint64) bool {
+	_, ok := s.cacheMap[sessionId]
 	return ok
 }
 
-func (s *SDKSessionMgr) IsExistSessionOfSessID(session_id uint64) bool {
-	_, ok := s.sessMap[session_id]
+func (s *SDKSessionMgr) IsExistSessionOfSessID(sessionId uint64) bool {
+	_, ok := s.sessMap[sessionId]
 	return ok
 }
 
-func (s *SDKSessionMgr) CreateSession() enet.ISession {
+func (s *SDKSessionMgr) CreateSession() ISession {
 	sess := NewSDKSession(s.handler)
 	sess.SetSessID(s.nextId)
 	sess.SetCoder(s.coder)
@@ -167,7 +166,7 @@ func (s *SDKSessionMgr) CreateSession() enet.ISession {
 	return sess
 }
 
-func (s *SDKSessionMgr) FindSession(id uint64) enet.ISession {
+func (s *SDKSessionMgr) FindSession(id uint64) ISession {
 	if id == 0 {
 		return nil
 	}
@@ -183,11 +182,11 @@ func (s *SDKSessionMgr) GetSessionCount() int {
 	return len(s.sessMap)
 }
 
-func (s *SDKSessionMgr) AddSession(session enet.ISession) {
+func (s *SDKSessionMgr) AddSession(session ISession) {
 	s.sessMap[session.GetSessID()] = session
-	if info, ok := s.cache_map[session.GetSessID()]; ok {
+	if info, ok := s.cacheMap[session.GetSessID()]; ok {
 		ELog.InfoAf("[SDKSessionMgr] AddSession Triggle ConnectCache Del SessionID=%v,ServerType=%v", session.GetSessID(), info.addr)
-		delete(s.cache_map, session.GetSessID())
+		delete(s.cacheMap, session.GetSessID())
 	}
 }
 
@@ -206,7 +205,7 @@ func (s *SDKSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgId uint32, 
 	}
 }
 
-func (s *SDKSessionMgr) SSClientConnect(addr string, handler ISdkMsgHandler, coder enet.ICoder) uint64 {
+func (s *SDKSessionMgr) SdkConnect(addr string, handler ISdkMsgHandler, coder ICoder) uint64 {
 	if coder == nil {
 		coder = NewCoder()
 	}
@@ -215,30 +214,30 @@ func (s *SDKSessionMgr) SSClientConnect(addr string, handler ISdkMsgHandler, cod
 	s.handler = handler
 	s.coder = coder
 	sess := s.CreateSession()
-	ssClientSess := sess.(*SDKSession)
-	ssClientSess.SetRemoteOuter(addr)
-	ssClientSess.SetConnectType()
+	sdkSess := sess.(*SDKSession)
+	sdkSess.SetRemoteOuter(addr)
+	sdkSess.SetConnectType()
 
 	cache := &SCClientSessionCache{
-		session_id:   sess.GetSessID(),
-		addr:         addr,
-		connect_tick: util.GetMillsecond() + SSOnceConnectMaxTime,
+		sessionId:   sess.GetSessID(),
+		addr:        addr,
+		connectTick: util.GetMillsecond() + SSOnceConnectMaxTime,
 	}
-	s.cache_map[sess.GetSessID()] = cache
+	s.cacheMap[sess.GetSessID()] = cache
 	ELog.InfoAf("[SDKSessionMgr]ConnectCache Add SessionID=%v,Addr=%v", sess.GetSessID(), addr)
-	enet.GNet.Connect(addr, sess)
+	GNet.Connect(addr, sess)
 
 	return sess.GetSessID()
 }
 
-func (s *SDKSessionMgr) SSClientListen(addr string, handler ISdkMsgHandler, coder enet.ICoder) bool {
+func (s *SDKSessionMgr) SdkListen(addr string, handler ISdkMsgHandler, coder ICoder) bool {
 	if coder == nil {
 		coder = NewCoder()
 	}
 	handler.Init()
 	s.handler = handler
 	s.coder = coder
-	return enet.GNet.Listen(addr, s, math.MaxInt32)
+	return GNet.Listen(addr, s, math.MaxInt32)
 }
 
 var GSDKSessionMgr *SDKSessionMgr

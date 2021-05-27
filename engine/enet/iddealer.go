@@ -1,4 +1,4 @@
-package frame
+package enet
 
 type IDDealer struct {
 	handlerMap map[uint32]interface{}

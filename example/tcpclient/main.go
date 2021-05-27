@@ -27,7 +27,7 @@ func (t *TcpClient) Init() bool {
 	ELog.Info("TcpClient Net Init Success")
 
 	for i := 0; i < 5; i++ {
-		frame.GCSSessionMgr.Connect("127.0.0.1:2000", GClientMsgHandler, nil)
+		enet.GCSSessionMgr.Connect("127.0.0.1:2000", GClientMsgHandler, nil)
 	}
 
 	ELog.Info("TcpClient Init Success")

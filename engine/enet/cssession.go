@@ -1,9 +1,8 @@
-package frame
+package enet
 
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/zjh-tech/go-frame/base/util"
-	"github.com/zjh-tech/go-frame/engine/enet"
 	"github.com/zjh-tech/go-frame/engine/etimer"
 )
 
@@ -92,19 +91,19 @@ func (c *CSSession) OnHandler(msgId uint32, datas []byte) {
 
 type CSSessionMgr struct {
 	nextId  uint64
-	sessMap map[uint64]enet.ISession
+	sessMap map[uint64]ISession
 	handler ICSMsgHandler
-	coder   enet.ICoder
+	coder   ICoder
 }
 
 func NewCSSessionMgr() *CSSessionMgr {
 	return &CSSessionMgr{
 		nextId:  1,
-		sessMap: make(map[uint64]enet.ISession),
+		sessMap: make(map[uint64]ISession),
 	}
 }
 
-func (c *CSSessionMgr) CreateSession() enet.ISession {
+func (c *CSSessionMgr) CreateSession() ISession {
 	sess := NewCSSession(c.handler)
 	sess.SetSessID(c.nextId)
 	sess.SetCoder(c.coder)
@@ -113,11 +112,11 @@ func (c *CSSessionMgr) CreateSession() enet.ISession {
 	return sess
 }
 
-func (c *CSSessionMgr) AddSession(session enet.ISession) {
+func (c *CSSessionMgr) AddSession(session ISession) {
 	c.sessMap[session.GetSessID()] = session
 }
 
-func (c *CSSessionMgr) FindSession(id uint64) enet.ISession {
+func (c *CSSessionMgr) FindSession(id uint64) ISession {
 	if id == 0 {
 		return nil
 	}
@@ -150,7 +149,7 @@ func (c *CSSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgId uint32, m
 	}
 }
 
-func (c *CSSessionMgr) Connect(addr string, handler ICSMsgHandler, coder enet.ICoder) {
+func (c *CSSessionMgr) Connect(addr string, handler ICSMsgHandler, coder ICoder) {
 	if coder == nil {
 		coder = NewCoder()
 	}
@@ -159,17 +158,17 @@ func (c *CSSessionMgr) Connect(addr string, handler ICSMsgHandler, coder enet.IC
 	c.handler = handler
 	sess := c.CreateSession()
 	sess.SetConnectType()
-	enet.GNet.Connect(addr, sess)
+	GNet.Connect(addr, sess)
 }
 
-func (c *CSSessionMgr) Listen(addr string, handler ICSMsgHandler, coder enet.ICoder, listenMaxCount int) bool {
+func (c *CSSessionMgr) Listen(addr string, handler ICSMsgHandler, coder ICoder, listenMaxCount int) bool {
 	if coder == nil {
 		coder = NewCoder()
 	}
 
 	c.coder = coder
 	c.handler = handler
-	return enet.GNet.Listen(addr, c, listenMaxCount)
+	return GNet.Listen(addr, c, listenMaxCount)
 }
 
 var GCSSessionMgr *CSSessionMgr
