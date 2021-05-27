@@ -23,8 +23,8 @@ type LogEvent struct {
 	line    int
 }
 
-const log_buff_event_size = 100000
-const log_call_depth = 3
+const LogBuffEventSize = 100000
+const LogCallDepth = 3
 
 type FuncType func(...interface{})
 type ArgType []interface{}

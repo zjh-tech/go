@@ -27,8 +27,7 @@ type ICoder interface {
 	UnzipBody(datas []byte) ([]byte, error)
 
 	ProcessMsg(datas []byte, sess ISession)
-
-	FillNetStream(datas []byte) ([]byte, error)
+	FillNetStream(msgID uint32, datas []byte) ([]byte, error)
 }
 
 type ISessionOnHandler interface {

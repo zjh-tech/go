@@ -1,6 +1,6 @@
 // +build linux
 package elog
 
-func (l *Logger) out_put_console(content string) {
+func (l *Logger) outPutConsole(content string) {
 
 }

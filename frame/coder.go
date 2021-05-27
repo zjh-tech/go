@@ -80,24 +80,35 @@ func (c *Coder) ProcessMsg(datas []byte, sess enet.ISession) {
 	}
 
 	buff := bytes.NewBuffer(datas)
-	msg_id := uint32(0)
-	if err := binary.Read(buff, binary.BigEndian, &msg_id); err != nil {
+	msgId := uint32(0)
+	if err := binary.Read(buff, binary.BigEndian, &msgId); err != nil {
 		ELog.ErrorAf("[Session] SesssionID=%v ProcessMsg MsgID Error=%v", sess.GetSessID(), err)
 		return
 	}
 
-	ELog.DebugAf("ConnID=%v,SessionID=%v,MsgID=%v", msg_id)
-	msg_start_index := PackageMsgIDLen + 2
-	sess.GetSessionOnHandler().OnHandler(msg_id, datas[msg_start_index:])
+	ELog.DebugAf("ConnID=%v,SessionID=%v,MsgID=%v", msgId)
+	msgStartIndex := PackageMsgIDLen + 2
+	sess.GetSessionOnHandler().OnHandler(msgId, datas[msgStartIndex:])
 }
 
 func (c *Coder) FillNetStream(msgID uint32, datas []byte) ([]byte, error) {
-	encodeDatas, encodeflag := c.EnCodeBody(datas)
-	zipDatas, zipflag := c.ZipBody(encodeDatas)
+	bodyBuff := bytes.NewBuffer([]byte{})
+	if err := binary.Write(bodyBuff, binary.BigEndian, msgID); err != nil {
+		ELog.ErrorAf("FillNetStream MsgID Error=%v", err)
+	}
+
+	if datas != nil {
+		if err := binary.Write(bodyBuff, binary.BigEndian, datas); err != nil {
+			ELog.ErrorAf("FillNetStream Datas Error=%v", err)
+		}
+	}
+
+	encodeDatas, encodeFlag := c.EnCodeBody(bodyBuff.Bytes())
+	zipDatas, zipFlag := c.ZipBody(encodeDatas)
 
 	header := &MsgHeader{}
-	header.EncodeFlag = encodeflag
-	header.ZipFlag = zipflag
+	header.EncodeFlag = encodeFlag
+	header.ZipFlag = zipFlag
 	header.BodyLen = uint32(len(zipDatas))
 
 	buff := bytes.NewBuffer([]byte{})
