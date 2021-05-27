@@ -15,7 +15,7 @@ func getMillsecond() int64 {
 }
 
 const (
-	TIME_METER_STAMP_MAX_SIZE int = 20
+	TimeMeterStampMaxSize int = 20
 )
 
 type TimeMeter struct {
@@ -29,12 +29,12 @@ type TimeMeter struct {
 func NewTimeMeter(limitMillSec int64) *TimeMeter {
 	return &TimeMeter{
 		limitMillSec: limitMillSec,
-		stampTicks:   make([]int64, TIME_METER_STAMP_MAX_SIZE),
+		stampTicks:   make([]int64, TimeMeterStampMaxSize),
 	}
 }
 
 func (t *TimeMeter) Stamp() {
-	if t.index < TIME_METER_STAMP_MAX_SIZE {
+	if t.index < TimeMeterStampMaxSize {
 		t.stampTicks[t.index] = getMillsecond()
 		t.index++
 	}
@@ -54,7 +54,8 @@ func (t *TimeMeter) CheckOut() {
 		index := strings.LastIndex(file, "/")
 		partFileName := file
 		if index != 0 {
-			partFileName = file[index+1 : len(file)]
+			fileLen := len(file)
+			partFileName = file[index+1 : fileLen]
 		}
 
 		t.buf.WriteString(fmt.Sprintf("[%s:%d]", partFileName, line))

@@ -13,15 +13,15 @@ type ILogicServer interface {
 }
 
 type LogicServer struct {
-	server_sess *SSSession
+	serverSess *SSSession
 }
 
 func (l *LogicServer) SetServerSession(serversess *SSSession) {
-	l.server_sess = serversess
+	l.serverSess = serversess
 }
 
 func (l *LogicServer) GetServerSession() *SSSession {
-	return l.server_sess
+	return l.serverSess
 }
 
 type ILogicServerFactory interface {

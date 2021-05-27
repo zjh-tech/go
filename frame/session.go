@@ -5,30 +5,26 @@ import (
 	"github.com/zjh-tech/go-frame/engine/enet"
 )
 
-const (
-	PackageMsgIDLen int = 4
-)
-
 type Session struct {
 	enet.ISessionOnHandler
-	conn      enet.IConnection
-	sess_id   uint64
-	attach    interface{}
-	coder     enet.ICoder
-	sess_type enet.SessionType
-	factory   enet.ISessionFactory
+	conn     enet.IConnection
+	sessId   uint64
+	attach   interface{}
+	coder    enet.ICoder
+	sessType enet.SessionType
+	factory  enet.ISessionFactory
 }
 
 func (s *Session) SetConnection(conn enet.IConnection) {
 	s.conn = conn
 }
 
-func (s *Session) SetSessID(sess_id uint64) {
-	s.sess_id = sess_id
+func (s *Session) SetSessID(sessId uint64) {
+	s.sessId = sessId
 }
 
 func (s *Session) GetSessID() uint64 {
-	return s.sess_id
+	return s.sessId
 }
 
 func (s *Session) GetAttach() interface{} {
@@ -52,7 +48,7 @@ func (s *Session) GetSessionOnHandler() enet.ISessionOnHandler {
 }
 
 func (s *Session) IsListenType() bool {
-	if s.sess_type == enet.SessListenType {
+	if s.sessType == enet.SessListenType {
 		return true
 	} else {
 		return false
@@ -60,7 +56,7 @@ func (s *Session) IsListenType() bool {
 }
 
 func (s *Session) IsConnectType() bool {
-	if s.sess_type == enet.SessConnectType {
+	if s.sessType == enet.SessConnectType {
 		return true
 	} else {
 		return false
@@ -68,11 +64,11 @@ func (s *Session) IsConnectType() bool {
 }
 
 func (s *Session) SetConnectType() {
-	s.sess_type = enet.SessConnectType
+	s.sessType = enet.SessConnectType
 }
 
 func (s *Session) SetListenType() {
-	s.sess_type = enet.SessListenType
+	s.sessType = enet.SessListenType
 }
 
 func (s *Session) SetSessionFactory(factory enet.ISessionFactory) {
@@ -95,12 +91,12 @@ func (s *Session) AsyncSendMsg(msgId uint32, datas []byte) bool {
 		return false
 	}
 
-	all_datas, err := s.coder.FillNetStream(msgId, datas)
+	allDatas, err := s.coder.FillNetStream(msgId, datas)
 	if err != nil {
-		ELog.ErrorAf("[Session] SesssionID=%v  AsyncSendMsg FillNetStream Error=%v", s.GetSessID(), err)
+		ELog.ErrorAf("[Session] SesssionID=%v  SendMsg FillNetStream Error=%v", s.GetSessID(), err)
 	}
 
-	s.conn.AsyncSend(all_datas)
+	s.conn.AsyncSend(allDatas)
 	return true
 }
 

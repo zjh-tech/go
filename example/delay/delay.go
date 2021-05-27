@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/zjh-tech/go-frame/engine/elog"
-	"github.com/zjh-tech/go-frame/frame"
+	"github.com/zjh-tech/go-frame/engine/etimer"
 )
 
 func main() {
@@ -45,7 +45,7 @@ func test_day_delay() {
 		flag1 = true
 	}
 
-	delay := frame.GetNextDelayEDayHMS(hour1, min1, sec1)
+	delay := etimer.GetNextDelayEDayHMS(hour1, min1, sec1)
 	ELog.InfoAf("[Day Delay] [+] Hour=%v,Min=%v,Sec=%v Delay=%v", hour1-hour, min1-min, sec1-sec, delay)
 
 	flag2 := false
@@ -65,7 +65,7 @@ func test_day_delay() {
 		flag2 = true
 	}
 
-	delay2 := frame.GetNextDelayEDayHMS(hour2, min2, sec2)
+	delay2 := etimer.GetNextDelayEDayHMS(hour2, min2, sec2)
 	ELog.InfoAf("[Day Delay] [-] Hour=%v,Min=%v,Sec=%v Delay=%v", hour-hour2, min-min2, sec-sec2, delay2)
 }
 

@@ -1,12 +1,12 @@
 package frame
 
 type IDDealer struct {
-	handler_map map[uint32]interface{}
+	handlerMap map[uint32]interface{}
 }
 
 func NewIDDealer() *IDDealer {
 	return &IDDealer{
-		handler_map: make(map[uint32]interface{}),
+		handlerMap: make(map[uint32]interface{}),
 	}
 }
 
@@ -15,17 +15,17 @@ func (i *IDDealer) RegisterHandler(id uint32, dealer interface{}) bool {
 		return false
 	}
 
-	if _, ok := i.handler_map[id]; ok {
+	if _, ok := i.handlerMap[id]; ok {
 		ELog.ErrorAf("IDDealer Error Id = %v Repeat", id)
 		return false
 	}
 
-	i.handler_map[id] = dealer
+	i.handlerMap[id] = dealer
 	return true
 }
 
 func (i *IDDealer) FindHandler(id uint32) interface{} {
-	if handler, ok := i.handler_map[id]; ok {
+	if handler, ok := i.handlerMap[id]; ok {
 		return handler
 	}
 

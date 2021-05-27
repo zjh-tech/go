@@ -1,12 +1,10 @@
 package frame
 
 import (
+	"github.com/golang/protobuf/proto"
 	"github.com/zjh-tech/go-frame/base/util"
 	"github.com/zjh-tech/go-frame/engine/enet"
 	"github.com/zjh-tech/go-frame/engine/etimer"
-	"github.com/zjh-tech/go-frame/frame/framepb"
-
-	"github.com/golang/protobuf/proto"
 )
 
 type ICSMsgHandler interface {
@@ -18,28 +16,28 @@ type ICSMsgHandler interface {
 
 type CSSession struct {
 	Session
-	handler              ICSMsgHandler
-	timer_register       etimer.ITimerRegister
-	last_beat_heart_time int64
+	handler           ICSMsgHandler
+	timerRegister     etimer.ITimerRegister
+	lastBeatHeartTime int64
 }
 
 const (
-	CS_BEAT_HEART_TIME_ID      uint32 = 1
-	CS_SEND_BEAT_HEART_TIME_ID uint32 = 2
+	CsBeatHeartTimeId     uint32 = 1
+	CsSendBeatHeartTimeId uint32 = 2
 )
 
 const (
-	CS_BEAT_HEART_TIME_DELAY uint64 = 1000 * 1
-	CS_SEND_BEAT_HEART_DELAY uint64 = 1000 * 20
+	CsBeatHeartTimeDelay uint64 = 1000 * 1
+	CsSendBeatHeartDelay uint64 = 1000 * 20
 )
 
-const C2S_BEAT_HEART_MAX_TIME int64 = 1000 * 60
+const C2sBeatHeartMaxTime int64 = 1000 * 60
 
 func NewCSSession(handler ICSMsgHandler) *CSSession {
 	sess := &CSSession{
-		handler:              handler,
-		last_beat_heart_time: util.GetMillsecond(),
-		timer_register:       etimer.NewTimerRegister(),
+		handler:           handler,
+		lastBeatHeartTime: util.GetMillsecond(),
+		timerRegister:     etimer.NewTimerRegister(),
 	}
 
 	sess.SetListenType()
@@ -52,9 +50,9 @@ func (c *CSSession) OnEstablish() {
 	ELog.InfoAf("CSSession %v Establish", c.GetSessID())
 	c.handler.OnConnect(c)
 
-	c.timer_register.AddRepeatTimer(CS_BEAT_HEART_TIME_ID, CS_BEAT_HEART_TIME_DELAY, "CSSession-BeatHeartCheck", func(v ...interface{}) {
+	c.timerRegister.AddRepeatTimer(CsBeatHeartTimeId, CsBeatHeartTimeDelay, "CSSession-BeatHeartCheck", func(v ...interface{}) {
 		now := util.GetMillsecond()
-		if (c.last_beat_heart_time + C2S_BEAT_HEART_MAX_TIME) < now {
+		if (c.lastBeatHeartTime + C2sBeatHeartMaxTime) < now {
 			ELog.ErrorAf("CSSession %v  BeatHeart Exception", c.GetSessID())
 			c.handler.OnBeatHeartError(c)
 			c.Terminate()
@@ -62,9 +60,9 @@ func (c *CSSession) OnEstablish() {
 	}, []interface{}{}, true)
 
 	if c.IsConnectType() {
-		c.timer_register.AddRepeatTimer(CS_SEND_BEAT_HEART_TIME_ID, CS_SEND_BEAT_HEART_DELAY, "CSSession-SendBeatHeart", func(v ...interface{}) {
+		c.timerRegister.AddRepeatTimer(CsSendBeatHeartTimeId, CsSendBeatHeartDelay, "CSSession-SendBeatHeart", func(v ...interface{}) {
 			ELog.DebugAf("[CSSession] SessID=%v Send Beat Heart", c.GetSessID())
-			c.AsyncSendMsg(uint32(framepb.EClient2GameMsgId_c2s_client_session_ping_id), nil)
+			c.AsyncSendMsg(C2SSessionPingId, nil)
 		}, []interface{}{}, true)
 	}
 }
@@ -72,45 +70,37 @@ func (c *CSSession) OnEstablish() {
 func (c *CSSession) OnTerminate() {
 	ELog.InfoAf("CSSession %v Terminate", c.GetSessID())
 	c.factory.RemoveSession(c.GetSessID())
-	c.timer_register.KillAllTimer()
+	c.timerRegister.KillAllTimer()
 	c.handler.OnDisconnect(c)
 }
 
 func (c *CSSession) OnHandler(msgId uint32, datas []byte) {
-	if msgId == uint32(framepb.EClient2GameMsgId_c2s_client_session_ping_id) {
+	if msgId == C2SSessionPingId {
 		ELog.DebugAf("[CSSession] SessionID=%v RECV PING SEND PONG", c.GetSessID())
-		c.last_beat_heart_time = util.GetMillsecond()
-		c.AsyncSendMsg(uint32(framepb.EClient2GameMsgId_s2c_client_session_pong_id), nil)
+		c.lastBeatHeartTime = util.GetMillsecond()
+		c.AsyncSendMsg(C2SSessionPongId, nil)
 		return
-	} else if msgId == uint32(framepb.EClient2GameMsgId_s2c_client_session_pong_id) {
+	} else if msgId == C2SSessionPongId {
 		ELog.DebugAf("[CSSession] SessionID=%v RECV  PONG", c.GetSessID())
-		c.last_beat_heart_time = util.GetMillsecond()
+		c.lastBeatHeartTime = util.GetMillsecond()
 		return
 	}
 
 	c.handler.OnHandler(msgId, datas, c)
-	c.last_beat_heart_time = util.GetMillsecond()
-}
-
-func (c *CSSession) SendMsg(msgId uint32, datas []byte) bool {
-	return c.AsyncSendMsg(msgId, datas)
-}
-
-func (c *CSSession) SendProtoMsg(msgId uint32, msg proto.Message) bool {
-	return c.AsyncSendProtoMsg(msgId, msg)
+	c.lastBeatHeartTime = util.GetMillsecond()
 }
 
 type CSSessionMgr struct {
-	nextId   uint64
-	sess_map map[uint64]enet.ISession
-	handler  ICSMsgHandler
-	coder    enet.ICoder
+	nextId  uint64
+	sessMap map[uint64]enet.ISession
+	handler ICSMsgHandler
+	coder   enet.ICoder
 }
 
 func NewCSSessionMgr() *CSSessionMgr {
 	return &CSSessionMgr{
-		nextId:   1,
-		sess_map: make(map[uint64]enet.ISession),
+		nextId:  1,
+		sessMap: make(map[uint64]enet.ISession),
 	}
 }
 
@@ -124,7 +114,7 @@ func (c *CSSessionMgr) CreateSession() enet.ISession {
 }
 
 func (c *CSSessionMgr) AddSession(session enet.ISession) {
-	c.sess_map[session.GetSessID()] = session
+	c.sessMap[session.GetSessID()] = session
 }
 
 func (c *CSSessionMgr) FindSession(id uint64) enet.ISession {
@@ -132,7 +122,7 @@ func (c *CSSessionMgr) FindSession(id uint64) enet.ISession {
 		return nil
 	}
 
-	if sess, ok := c.sess_map[id]; ok {
+	if sess, ok := c.sessMap[id]; ok {
 		return sess
 	}
 
@@ -140,21 +130,21 @@ func (c *CSSessionMgr) FindSession(id uint64) enet.ISession {
 }
 
 func (c *CSSessionMgr) GetSessionCount() int {
-	return len(c.sess_map)
+	return len(c.sessMap)
 }
 
 func (c *CSSessionMgr) RemoveSession(id uint64) {
-	if _, ok := c.sess_map[id]; ok {
-		delete(c.sess_map, id)
+	if _, ok := c.sessMap[id]; ok {
+		delete(c.sessMap, id)
 	}
 }
 
 func (c *CSSessionMgr) Count() int {
-	return len(c.sess_map)
+	return len(c.sessMap)
 }
 
 func (c *CSSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgId uint32, msg proto.Message) {
-	serversess, ok := c.sess_map[sessionID]
+	serversess, ok := c.sessMap[sessionID]
 	if ok {
 		serversess.AsyncSendProtoMsg(msgId, msg)
 	}

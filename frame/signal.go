@@ -11,38 +11,38 @@ type ISignalQuitDealer interface {
 }
 
 type SignalDealer struct {
-	signal_chan chan os.Signal
-	quit_dealer ISignalQuitDealer
+	signalChan chan os.Signal
+	quitDealer ISignalQuitDealer
 }
 
 func (s *SignalDealer) Init(dealer ISignalQuitDealer) {
-	s.quit_dealer = dealer
+	s.quitDealer = dealer
 
-	signal.Notify(s.signal_chan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(s.signalChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
 		for {
-			signal := <-s.signal_chan
+			signal := <-s.signalChan
 			switch signal {
 			case syscall.SIGINT:
 				{
 					ELog.Info("HANDLE SIGINT SIGNAL")
-					if s.quit_dealer != nil {
-						s.quit_dealer.Quit()
+					if s.quitDealer != nil {
+						s.quitDealer.Quit()
 					}
 				}
 			case syscall.SIGTERM:
 				{
 					ELog.Info("HANDLE SIGTERM SIGNAL")
-					if s.quit_dealer != nil {
-						s.quit_dealer.Quit()
+					if s.quitDealer != nil {
+						s.quitDealer.Quit()
 					}
 				}
 			case syscall.SIGQUIT:
 				{
 					ELog.Info("HANDLE SIGQUIT SIGNAL")
-					if s.quit_dealer != nil {
-						s.quit_dealer.Quit()
+					if s.quitDealer != nil {
+						s.quitDealer.Quit()
 					}
 				}
 			default:
@@ -59,7 +59,7 @@ var GSignalDealer *SignalDealer
 
 func init() {
 	GSignalDealer = &SignalDealer{
-		signal_chan: make(chan os.Signal),
-		quit_dealer: nil,
+		signalChan: make(chan os.Signal),
+		quitDealer: nil,
 	}
 }

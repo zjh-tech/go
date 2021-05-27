@@ -65,7 +65,7 @@ func ReadServerCfg(path string) (*ServerCfg, error) {
 
 	cfg_root := doc.SelectElement("config")
 	if cfg_root == nil {
-		return nil, errors.New("server_cfg Xml Config Error")
+		return nil, errors.New("serverCfg Xml Config Error")
 	}
 
 	cfg := NewServerCfg()

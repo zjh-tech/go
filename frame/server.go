@@ -26,13 +26,13 @@ type IServerFacade interface {
 }
 
 type Server struct {
-	config_path       string
-	terminate         bool
-	local_server_id   uint64
-	local_server_type uint32
-	local_ip          string
-	local_token       string
-	logger            *elog.Logger
+	configPath      string
+	terminate       bool
+	localServerId   uint64
+	localServerType uint32
+	localIp         string
+	localToken      string
+	logger          *elog.Logger
 }
 
 func (s *Server) IsQuit() bool {
@@ -45,19 +45,19 @@ func (s *Server) Quit() {
 }
 
 func (s *Server) GetLocalServerID() uint64 {
-	return s.local_server_id
+	return s.localServerId
 }
 
 func (s *Server) GetLocalToken() string {
-	return s.local_token
+	return s.localToken
 }
 
 func (s *Server) GetLocalServerType() uint32 {
-	return s.local_server_type
+	return s.localServerType
 }
 
 func (s *Server) GetLocalIp() string {
-	return s.local_ip
+	return s.localIp
 }
 
 func (s *Server) GetLogger() *elog.Logger {
@@ -65,36 +65,36 @@ func (s *Server) GetLogger() *elog.Logger {
 }
 
 func (s *Server) GetConfigPath() string {
-	return s.config_path
+	return s.configPath
 }
 
 func (s *Server) Init() bool {
-	config_path := "."
+	configPath := "."
 	if len(os.Args) == 2 {
-		config_path = os.Args[1]
+		configPath = os.Args[1]
 	}
 
-	s.config_path = config_path
+	s.configPath = configPath
 	s.terminate = false
 
-	server_cfg_path := s.GetConfigPath() + "/server_cfg.xml"
-	if server_cfg, read_err := ReadServerCfg(server_cfg_path); read_err != nil {
+	serverCfgPath := s.GetConfigPath() + "/serverCfg.xml"
+	if serverCfg, readErr := ReadServerCfg(serverCfgPath); readErr != nil {
 		return false
 	} else {
-		GServerCfg = server_cfg
+		GServerCfg = serverCfg
 	}
 
-	s.local_server_id = GServerCfg.ServerId
-	s.local_server_type = GServerCfg.ServerType
-	s.local_token = GServerCfg.Token
-	s.local_ip, _ = util.GetLocalIp()
+	s.localServerId = GServerCfg.ServerId
+	s.localServerType = GServerCfg.ServerType
+	s.localToken = GServerCfg.Token
+	s.localIp, _ = util.GetLocalIp()
 
 	//Log
 	s.logger = elog.NewLogger(GServerCfg.LogDir, GServerCfg.LogLevel)
 	s.logger.Init()
-	s.init_modules_log()
+	s.initModulesLog()
 	ELog.Info("Server Log System Init Success")
-	s.print_modules_version()
+	s.printModulesVersion()
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -113,7 +113,7 @@ func (s *Server) Init() bool {
 	}
 
 	//Uid
-	idMaker, idErr := NewIdMaker(int64(s.local_server_id))
+	idMaker, idErr := NewIdMaker(int64(s.localServerId))
 	if idErr != nil {
 		ELog.Errorf("Server IdMaker Error=%v", idMaker)
 		return false
@@ -121,14 +121,14 @@ func (s *Server) Init() bool {
 	GIdMaker = idMaker
 
 	//Gops
-	gops_err := agent.Listen(agent.Options{
+	gopsErr := agent.Listen(agent.Options{
 		Addr:            "",
 		ConfigDir:       "",
 		ShutdownCleanup: true,
 	})
 
-	if gops_err != nil {
-		ELog.Errorf("Server Gops Error=%v", gops_err)
+	if gopsErr != nil {
+		ELog.Errorf("Server Gops Error=%v", gopsErr)
 		return false
 	}
 
@@ -138,7 +138,7 @@ func (s *Server) Init() bool {
 	return true
 }
 
-func (s *Server) init_modules_log() {
+func (s *Server) initModulesLog() {
 	//IOC依赖注入
 	ELog.SetLogger(s.logger)
 	etimer.ELog.SetLogger(s.logger)
@@ -147,7 +147,7 @@ func (s *Server) init_modules_log() {
 	eredis.ELog.SetLogger(s.logger)
 }
 
-func (s *Server) print_modules_version() {
+func (s *Server) printModulesVersion() {
 	modules := []ecommon.IVersion{elog.GLogVersion, edb.GDBVersion, eredis.GRedisVersion, etimer.GTimerVersion}
 	for _, module := range modules {
 		ELog.Info(module.GetVersion())

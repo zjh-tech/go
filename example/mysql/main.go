@@ -37,12 +37,12 @@ func (s *Server) Init() bool {
 
 	ELog.Info("Server Log System Init Success")
 
-	if err := frame.GDatabaseCfgMgr.Load("./db_cfg.xml"); err != nil {
+	if err := edb.GDatabaseCfgMgr.Load("./db_cfg.xml"); err != nil {
 		ELog.Error(err)
 		return false
 	}
 
-	if err := edb.GDBModule.Init(frame.GDatabaseCfgMgr.DBConnMaxCount, frame.GDatabaseCfgMgr.DBTableMaxCount, frame.GDatabaseCfgMgr.DBConnSpecs); err != nil {
+	if err := edb.GDBModule.Init(edb.GDatabaseCfgMgr.DBConnMaxCount, edb.GDatabaseCfgMgr.DBTableMaxCount, edb.GDatabaseCfgMgr.DBConnSpecs); err != nil {
 		ELog.Error(err)
 		return false
 	}
@@ -99,12 +99,12 @@ func TestSync() {
 		}
 
 		//Insert
-		frame.SyncDoSqlOpt(func(conn edb.IMysqlConn, attach []interface{}) (edb.IMysqlRecordSet, int32, error) {
+		edb.SyncDoSqlOpt(func(conn edb.IMysqlConn, attach []interface{}) (edb.IMysqlRecordSet, int32, error) {
 			paras := attach[0].(*CmdParas)
 			uid := util.Hash64(paras.UserName)
 			tableName := edb.GDBModule.GetTableNameByUID("account", uid)
-			accountId := frame.GIdMaker.NextId()
-			insert_sql := frame.BuildInsertSQL(tableName, map[string]interface{}{
+			accountId, _ := frame.GIdMaker.NextId()
+			insert_sql := edb.BuildInsertSQL(tableName, map[string]interface{}{
 				"accountid": accountId,
 				"username":  paras.UserName,
 				"password":  paras.Password,
@@ -138,11 +138,11 @@ func TestSync() {
 		}
 
 		//Select
-		frame.SyncDoSqlOpt(func(conn edb.IMysqlConn, attach []interface{}) (edb.IMysqlRecordSet, int32, error) {
+		edb.SyncDoSqlOpt(func(conn edb.IMysqlConn, attach []interface{}) (edb.IMysqlRecordSet, int32, error) {
 			paras := attach[0].(*CmdParas)
 			uid := util.Hash64(paras.UserName)
 			tableName := edb.GDBModule.GetTableNameByUID("account", uid)
-			select_sql := frame.BuildSelectSQL(tableName, []string{
+			select_sql := edb.BuildSelectSQL(tableName, []string{
 				"accountid",
 				"username",
 				"password",

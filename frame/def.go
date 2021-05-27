@@ -1,8 +1,8 @@
 package frame
 
 const (
-	MSG_SUCCESS uint32 = 0
-	MSG_FAIL    uint32 = 1
+	MsgSuccess uint32 = 0
+	MsgFail    uint32 = 1
 )
 
 const (

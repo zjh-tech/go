@@ -10,6 +10,7 @@ import (
 
 const (
 	PackageHeaderLen uint32 = 6 //MsgHeader(bool + bool + uint32)
+	PackageMsgIDLen  int    = 4
 )
 
 type MsgHeader struct {
@@ -19,7 +20,7 @@ type MsgHeader struct {
 }
 
 type Coder struct {
-	msg_header MsgHeader
+	msgHeader MsgHeader
 }
 
 func NewCoder() *Coder {
@@ -36,17 +37,17 @@ func (c *Coder) GetBodyLen(datas []byte) (uint32, error) {
 	}
 
 	buff := bytes.NewBuffer(datas)
-	if err := binary.Read(buff, binary.BigEndian, &c.msg_header.EncodeFlag); err != nil {
+	if err := binary.Read(buff, binary.BigEndian, &c.msgHeader.EncodeFlag); err != nil {
 		return 0, err
 	}
-	if err := binary.Read(buff, binary.BigEndian, &c.msg_header.ZipFlag); err != nil {
+	if err := binary.Read(buff, binary.BigEndian, &c.msgHeader.ZipFlag); err != nil {
 		return 0, err
 	}
-	if err := binary.Read(buff, binary.BigEndian, &c.msg_header.BodyLen); err != nil {
+	if err := binary.Read(buff, binary.BigEndian, &c.msgHeader.BodyLen); err != nil {
 		return 0, err
 	}
 
-	return c.msg_header.BodyLen, nil
+	return c.msgHeader.BodyLen, nil
 }
 
 func (c *Coder) EnCodeBody(datas []byte) ([]byte, bool) {
@@ -54,7 +55,7 @@ func (c *Coder) EnCodeBody(datas []byte) ([]byte, bool) {
 }
 
 func (c *Coder) DecodeBody(datas []byte) ([]byte, error) {
-	if c.msg_header.EncodeFlag == false {
+	if !c.msgHeader.EncodeFlag {
 		return datas, nil
 	}
 
@@ -66,7 +67,7 @@ func (c *Coder) ZipBody(datas []byte) ([]byte, bool) {
 }
 
 func (c *Coder) UnzipBody(datas []byte) ([]byte, error) {
-	if c.msg_header.EncodeFlag == false {
+	if !c.msgHeader.EncodeFlag {
 		return datas, nil
 	}
 

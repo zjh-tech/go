@@ -16,7 +16,7 @@ type TimerMgr struct {
 	lastTick int64
 }
 
-func new_timer_mgr() *TimerMgr {
+func newTimerMgr() *TimerMgr {
 	mgr := &TimerMgr{
 		curSlot: 0,
 		uid:     0,
@@ -144,5 +144,5 @@ func (t *TimerMgr) GetCurSlot() uint64 {
 var GTimerMgr *TimerMgr
 
 func init() {
-	GTimerMgr = new_timer_mgr()
+	GTimerMgr = newTimerMgr()
 }
