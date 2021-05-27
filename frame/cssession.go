@@ -10,7 +10,7 @@ import (
 )
 
 type ICSMsgHandler interface {
-	OnHandler(msgID uint32, datas []byte, sess *CSSession)
+	OnHandler(msgId uint32, datas []byte, sess *CSSession)
 	OnConnect(sess *CSSession)
 	OnDisconnect(sess *CSSession)
 	OnBeatHeartError(sess *CSSession)
@@ -76,32 +76,32 @@ func (c *CSSession) OnTerminate() {
 	c.handler.OnDisconnect(c)
 }
 
-func (c *CSSession) OnHandler(msgID uint32, datas []byte) {
-	if msgID == uint32(framepb.EClient2GameMsgId_c2s_client_session_ping_id) {
+func (c *CSSession) OnHandler(msgId uint32, datas []byte) {
+	if msgId == uint32(framepb.EClient2GameMsgId_c2s_client_session_ping_id) {
 		ELog.DebugAf("[CSSession] SessionID=%v RECV PING SEND PONG", c.GetSessID())
 		c.last_beat_heart_time = util.GetMillsecond()
 		c.AsyncSendMsg(uint32(framepb.EClient2GameMsgId_s2c_client_session_pong_id), nil)
 		return
-	} else if msgID == uint32(framepb.EClient2GameMsgId_s2c_client_session_pong_id) {
+	} else if msgId == uint32(framepb.EClient2GameMsgId_s2c_client_session_pong_id) {
 		ELog.DebugAf("[CSSession] SessionID=%v RECV  PONG", c.GetSessID())
 		c.last_beat_heart_time = util.GetMillsecond()
 		return
 	}
 
-	c.handler.OnHandler(msgID, datas, c)
+	c.handler.OnHandler(msgId, datas, c)
 	c.last_beat_heart_time = util.GetMillsecond()
 }
 
-func (c *CSSession) SendMsg(msgID uint32, datas []byte) bool {
-	return c.AsyncSendMsg(msgID, datas)
+func (c *CSSession) SendMsg(msgId uint32, datas []byte) bool {
+	return c.AsyncSendMsg(msgId, datas)
 }
 
-func (c *CSSession) SendProtoMsg(msgID uint32, msg proto.Message) bool {
-	return c.AsyncSendProtoMsg(msgID, msg)
+func (c *CSSession) SendProtoMsg(msgId uint32, msg proto.Message) bool {
+	return c.AsyncSendProtoMsg(msgId, msg)
 }
 
 type CSSessionMgr struct {
-	next_id  uint64
+	nextId   uint64
 	sess_map map[uint64]enet.ISession
 	handler  ICSMsgHandler
 	coder    enet.ICoder
@@ -109,17 +109,17 @@ type CSSessionMgr struct {
 
 func NewCSSessionMgr() *CSSessionMgr {
 	return &CSSessionMgr{
-		next_id:  1,
+		nextId:   1,
 		sess_map: make(map[uint64]enet.ISession),
 	}
 }
 
 func (c *CSSessionMgr) CreateSession() enet.ISession {
 	sess := NewCSSession(c.handler)
-	sess.SetSessID(c.next_id)
+	sess.SetSessID(c.nextId)
 	sess.SetCoder(c.coder)
 	sess.SetSessionFactory(c)
-	c.next_id++
+	c.nextId++
 	return sess
 }
 
@@ -153,10 +153,10 @@ func (c *CSSessionMgr) Count() int {
 	return len(c.sess_map)
 }
 
-func (c *CSSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgID uint32, msg proto.Message) {
+func (c *CSSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgId uint32, msg proto.Message) {
 	serversess, ok := c.sess_map[sessionID]
 	if ok {
-		serversess.AsyncSendProtoMsg(msgID, msg)
+		serversess.AsyncSendProtoMsg(msgId, msg)
 	}
 }
 

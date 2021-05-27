@@ -12,7 +12,7 @@ type INet interface {
 	PushSingleHttpEvent(IHttpEvent)
 	PushMultiHttpEvent(IHttpEvent)
 	Connect(addr string, sess ISession)
-	Listen(addr string, factory ISessionFactory, listen_max_count int) bool
+	Listen(addr string, factory ISessionFactory, listenMaxCount int) bool
 	Run(loopCount int) bool
 }
 
@@ -27,11 +27,11 @@ type ICoder interface {
 	UnzipBody(datas []byte) ([]byte, error)
 
 	ProcessMsg(datas []byte, sess ISession)
-	FillNetStream(msgID uint32, datas []byte) ([]byte, error)
+	FillNetStream(msgId uint32, datas []byte) ([]byte, error)
 }
 
 type ISessionOnHandler interface {
-	OnHandler(msgID uint32, datas []byte)
+	OnHandler(msgId uint32, datas []byte)
 }
 
 type IEventQueue interface {
@@ -88,9 +88,9 @@ type ISession interface {
 
 	GetSessionFactory() ISessionFactory
 
-	AsyncSendMsg(msgID uint32, datas []byte) bool
+	AsyncSendMsg(msgId uint32, datas []byte) bool
 
-	AsyncSendProtoMsg(msgID uint32, msg proto.Message) bool
+	AsyncSendProtoMsg(msgId uint32, msg proto.Message) bool
 
 	//主动断开
 	Terminate()
@@ -106,7 +106,7 @@ type ISessionFactory interface {
 
 //Http
 type IHttpConnection interface {
-	OnHandler(msg_id uint32, datas []byte)
+	OnHandler(msgId uint32, datas []byte)
 }
 
 type IHttpEvent interface {

@@ -18,16 +18,16 @@ func (c *ClientMsgHandler) Init() bool {
 	return true
 }
 
-func (c *ClientMsgHandler) OnHandler(msgID uint32, datas []byte, sess *frame.CSSession) {
+func (c *ClientMsgHandler) OnHandler(msgId uint32, datas []byte, sess *frame.CSSession) {
 	defer func() {
 		if err := recover(); err != nil {
-			ELog.ErrorAf("ClientGateMsgHandler onHandler MsgID = %v Error", msgID)
+			ELog.ErrorAf("ClientGateMsgHandler onHandler MsgID = %v Error", msgId)
 		}
 	}()
 
-	dealer := c.dealer.FindHandler(msgID)
+	dealer := c.dealer.FindHandler(msgId)
 	if dealer == nil {
-		ELog.ErrorAf("ClientGateMsgHandler Can Not Find MsgID = %v", msgID)
+		ELog.ErrorAf("ClientGateMsgHandler Can Not Find MsgID = %v", msgId)
 		return
 	}
 

@@ -11,18 +11,18 @@ type ConnEvent struct {
 }
 
 type Net struct {
-	evt_queue      IEventQueue
-	http_evt_queue IEventQueue
-	conn_queue     chan ConnEvent
-	multi_flag     bool
+	evtQueue     IEventQueue
+	httpEvtQueue IEventQueue
+	connQueue    chan ConnEvent
+	multiFlag    bool
 }
 
-func new_net(max_evt_count uint32, max_conn_count uint32) *Net {
+func newNet(max_evt_count uint32, max_conn_count uint32) *Net {
 	return &Net{
-		evt_queue:      new_event_queue(max_evt_count),
-		http_evt_queue: new_event_queue(max_conn_count),
-		conn_queue:     make(chan ConnEvent, max_conn_count),
-		multi_flag:     false,
+		evtQueue:     new_event_queue(max_evt_count),
+		httpEvtQueue: new_event_queue(max_conn_count),
+		connQueue:    make(chan ConnEvent, max_conn_count),
+		multiFlag:    false,
 	}
 }
 
@@ -30,7 +30,7 @@ func (n *Net) Init() bool {
 	go func() {
 		for {
 			select {
-			case evt := <-n.conn_queue:
+			case evt := <-n.connQueue:
 				addr, err := net.ResolveTCPAddr("tcp4", evt.addr)
 				if err != nil {
 					ELog.Errorf("[Net] Connect Addr=%v ResolveTCPAddr Error=%v", addr, err)
@@ -57,31 +57,31 @@ func (n *Net) UnInit() {
 }
 
 func (n *Net) SetMultiProcessMsg() {
-	n.multi_flag = true
+	n.multiFlag = true
 	if GMsgHandlerPool == nil {
-		chan_size := 100000
-		GMsgHandlerPool = NewMsgHandlerPool(runtime.NumCPU(), chan_size)
+		chanSize := 100000
+		GMsgHandlerPool = NewMsgHandlerPool(runtime.NumCPU(), chanSize)
 		GMsgHandlerPool.Init()
 	}
 }
 
 func (n *Net) PushEvent(evt IEvent) {
-	if n.multi_flag {
+	if n.multiFlag {
 		GMsgHandlerPool.PushEvent(evt)
 	} else {
-		n.evt_queue.PushEvent(evt)
+		n.evtQueue.PushEvent(evt)
 	}
 }
 
 func (n *Net) PushSingleHttpEvent(http_evt IHttpEvent) {
-	n.http_evt_queue.PushEvent(http_evt)
+	n.httpEvtQueue.PushEvent(http_evt)
 }
 
 func (n *Net) PushMultiHttpEvent(http_evt IHttpEvent) {
 	http_evt.ProcessMsg()
 }
 
-func (n *Net) Listen(addr string, factory ISessionFactory, listen_max_count int) bool {
+func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int) bool {
 	tcp_addr, err := net.ResolveTCPAddr("tcp4", addr)
 	if err != nil {
 		ELog.Errorf("[Net] Addr=%v ResolveTCPAddr Error=%v", addr, err)
@@ -96,33 +96,33 @@ func (n *Net) Listen(addr string, factory ISessionFactory, listen_max_count int)
 
 	ELog.Infof("[Net] Addr=%v ListenTCP Success", tcp_addr)
 
-	go func(sessfactory ISessionFactory, listen *net.TCPListener, listen_max_count int) {
+	go func(sessfactory ISessionFactory, listen *net.TCPListener, listenMaxCount int) {
 		for {
-			net_conn, accept_err := listen.AcceptTCP()
-			if accept_err != nil {
-				ELog.ErrorAf("[Net] Accept Error=%v", accept_err)
+			netConn, acceptErr := listen.AcceptTCP()
+			if acceptErr != nil {
+				ELog.ErrorAf("[Net] Accept Error=%v", acceptErr)
 				continue
 			}
-			ELog.InfoAf("[Net] Accept Remote Addr %v", net_conn.RemoteAddr().String())
+			ELog.InfoAf("[Net] Accept Remote Addr %v", netConn.RemoteAddr().String())
 
-			if sessfactory.GetSessionCount() >= listen_max_count {
+			if sessfactory.GetSessionCount() >= listenMaxCount {
 				ELog.ErrorA("[Net] Conn is Full")
-				net_conn.Close()
+				netConn.Close()
 				continue
 			}
 
 			session := sessfactory.CreateSession()
 			if session == nil {
 				ELog.ErrorA("[Net] CreateSession Error")
-				net_conn.Close()
+				netConn.Close()
 				continue
 			}
 
-			conn := GConnectionMgr.Create(n, net_conn, session)
+			conn := GConnectionMgr.Create(n, netConn, session)
 			session.SetConnection(conn)
 			go conn.Start()
 		}
-	}(factory, listen, listen_max_count)
+	}(factory, listen, listenMaxCount)
 
 	return true
 }
@@ -132,20 +132,21 @@ func (n *Net) Connect(addr string, sess ISession) {
 		addr: addr,
 		sess: sess,
 	}
-	n.conn_queue <- connEvt
+	n.connQueue <- connEvt
 }
 
 func (n *Net) Run(loopCount int) bool {
-	for i := 0; i < loopCount; i++ {
+	i := 0
+	for ; i < loopCount; i++ {
 		select {
-		case evt, ok := <-n.evt_queue.GetEventQueue():
+		case evt, ok := <-n.evtQueue.GetEventQueue():
 			tcp_evt := evt.(*TcpEvent)
 			if !ok {
 				return false
 			}
 
 			return tcp_evt.ProcessMsg()
-		case evt, ok := <-n.http_evt_queue.GetEventQueue():
+		case evt, ok := <-n.httpEvtQueue.GetEventQueue():
 			if !ok {
 				return false
 			}
@@ -162,5 +163,5 @@ func (n *Net) Run(loopCount int) bool {
 var GNet *Net
 
 func init() {
-	GNet = new_net(1024*10, 60000)
+	GNet = newNet(1024*10, 60000)
 }

@@ -58,10 +58,10 @@ func (c *SDHttpServerSession) Init() bool {
 	return true
 }
 
-func (c *SDHttpServerSession) OnHandler(msgID uint32, datas []byte) {
-	dealer := c.dealer.FindHandler(msgID)
+func (c *SDHttpServerSession) OnHandler(msgId uint32, datas []byte) {
+	dealer := c.dealer.FindHandler(msgId)
 	if dealer == nil {
-		ELog.ErrorAf("SDHttpServerSession Can Not Find MsgID = %v", msgID)
+		ELog.ErrorAf("SDHttpServerSession Can Not Find MsgID = %v", msgId)
 		return
 	}
 

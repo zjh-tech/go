@@ -12,7 +12,7 @@ import (
 
 type ISdkMsgHandler interface {
 	Init() bool
-	OnHandler(msg_id uint32, datas []byte, sess *SDKSession)
+	OnHandler(msgId uint32, datas []byte, sess *SDKSession)
 	OnConnect(sess *SDKSession)
 	OnDisconnect(sess *SDKSession)
 	OnBeatHeartError(sess *SDKSession)
@@ -88,19 +88,19 @@ func (s *SDKSession) OnTerminate() {
 	s.handler.OnDisconnect(s)
 }
 
-func (s *SDKSession) OnHandler(msg_id uint32, datas []byte) {
-	if msg_id == uint32(framepb.S2SBaseMsgId_s2s_client_session_ping_id) {
+func (s *SDKSession) OnHandler(msgId uint32, datas []byte) {
+	if msgId == uint32(framepb.S2SBaseMsgId_s2s_client_session_ping_id) {
 		ELog.DebugAf("[SDKSession] SessionID=%v RECV SS_CLIENT_PING_MSG_ID", s.GetSessID())
 		s.last_beat_heart_time = util.GetMillsecond()
 		s.AsyncSendMsg(uint32(framepb.S2SBaseMsgId_s2s_client_session_pong_id), nil)
 		return
-	} else if msg_id == uint32(framepb.S2SBaseMsgId_s2s_client_session_pong_id) {
+	} else if msgId == uint32(framepb.S2SBaseMsgId_s2s_client_session_pong_id) {
 		ELog.DebugAf("[SDKSession] SessionID=%v RECV SS_CLIENT_PONG_MSG_ID", s.GetSessID())
 		s.last_beat_heart_time = util.GetMillsecond()
 		return
 	}
 
-	s.handler.OnHandler(msg_id, datas, s)
+	s.handler.OnHandler(msgId, datas, s)
 	s.last_beat_heart_time = util.GetMillsecond()
 }
 
@@ -119,7 +119,7 @@ const (
 )
 
 type SDKSessionMgr struct {
-	next_id        uint64
+	nextId         uint64
 	sess_map       map[uint64]enet.ISession
 	handler        ISdkMsgHandler
 	coder          enet.ICoder
@@ -129,7 +129,7 @@ type SDKSessionMgr struct {
 
 func NewSDKSessionMgr() *SDKSessionMgr {
 	return &SDKSessionMgr{
-		next_id:        1,
+		nextId:         1,
 		sess_map:       make(map[uint64]enet.ISession),
 		timer_register: etimer.NewTimerRegister(),
 		cache_map:      make(map[uint64]*SCClientSessionCache),
@@ -160,11 +160,11 @@ func (s *SDKSessionMgr) IsExistSessionOfSessID(session_id uint64) bool {
 
 func (s *SDKSessionMgr) CreateSession() enet.ISession {
 	sess := NewSDKSession(s.handler)
-	sess.SetSessID(s.next_id)
+	sess.SetSessID(s.nextId)
 	sess.SetCoder(s.coder)
 	sess.SetSessionFactory(s)
 	ELog.InfoAf("[SDKSessionMgr] CreateSession SessID=%v", sess.GetSessID())
-	s.next_id++
+	s.nextId++
 	return sess
 }
 
@@ -200,10 +200,10 @@ func (s *SDKSessionMgr) Count() int {
 	return len(s.sess_map)
 }
 
-func (s *SDKSessionMgr) AsyncSendProtoMsgBySessionID(sessionID uint64, msgID uint32, msg proto.Message) {
+func (s *SDKSessionMgr) AsyncSendProtoMsgBySessionID(sessionID uint64, msgId uint32, msg proto.Message) {
 	serversess, ok := s.sess_map[sessionID]
 	if ok {
-		serversess.AsyncSendProtoMsg(msgID, msg)
+		serversess.AsyncSendProtoMsg(msgId, msg)
 	}
 }
 

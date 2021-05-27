@@ -25,14 +25,14 @@ func (c *ClientMsgHandler) Init() bool {
 	return true
 }
 
-func (c *ClientMsgHandler) OnHandler(msgID uint32, datas []byte, sess *frame.CSSession) {
+func (c *ClientMsgHandler) OnHandler(msgId uint32, datas []byte, sess *frame.CSSession) {
 	defer func() {
 		if err := recover(); err != nil {
-			ELog.ErrorAf("ClientMsgHandler onHandler MsgID = %v Error=%v", msgID, err)
+			ELog.ErrorAf("ClientMsgHandler onHandler MsgID = %v Error=%v", msgId, err)
 		}
 	}()
 
-	dealer := c.dealer.FindHandler(msgID)
+	dealer := c.dealer.FindHandler(msgId)
 	if dealer != nil {
 		dealer.(GameClientFunc)(datas, sess)
 		return

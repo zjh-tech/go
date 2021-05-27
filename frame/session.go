@@ -52,7 +52,7 @@ func (s *Session) GetSessionOnHandler() enet.ISessionOnHandler {
 }
 
 func (s *Session) IsListenType() bool {
-	if s.sess_type == enet.SESS_LISTEN_TYPE {
+	if s.sess_type == enet.SessListenType {
 		return true
 	} else {
 		return false
@@ -60,7 +60,7 @@ func (s *Session) IsListenType() bool {
 }
 
 func (s *Session) IsConnectType() bool {
-	if s.sess_type == enet.SESS_CONNECT_TYPE {
+	if s.sess_type == enet.SessConnectType {
 		return true
 	} else {
 		return false
@@ -68,11 +68,11 @@ func (s *Session) IsConnectType() bool {
 }
 
 func (s *Session) SetConnectType() {
-	s.sess_type = enet.SESS_CONNECT_TYPE
+	s.sess_type = enet.SessConnectType
 }
 
 func (s *Session) SetListenType() {
-	s.sess_type = enet.SESS_LISTEN_TYPE
+	s.sess_type = enet.SessListenType
 }
 
 func (s *Session) SetSessionFactory(factory enet.ISessionFactory) {
@@ -90,12 +90,12 @@ func (s *Session) Terminate() {
 	}
 }
 
-func (s *Session) AsyncSendMsg(msgID uint32, datas []byte) bool {
+func (s *Session) AsyncSendMsg(msgId uint32, datas []byte) bool {
 	if s.conn == nil {
 		return false
 	}
 
-	all_datas, err := s.coder.FillNetStream(msgID, datas)
+	all_datas, err := s.coder.FillNetStream(msgId, datas)
 	if err != nil {
 		ELog.ErrorAf("[Session] SesssionID=%v  AsyncSendMsg FillNetStream Error=%v", s.GetSessID(), err)
 	}
@@ -104,16 +104,16 @@ func (s *Session) AsyncSendMsg(msgID uint32, datas []byte) bool {
 	return true
 }
 
-func (s *Session) AsyncSendProtoMsg(msgID uint32, msg proto.Message) bool {
+func (s *Session) AsyncSendProtoMsg(msgId uint32, msg proto.Message) bool {
 	if s.conn == nil {
 		return false
 	}
 
 	datas, err := proto.Marshal(msg)
 	if err != nil {
-		ELog.ErrorAf("[Net] Msg=%v Marshal Err %v ", msgID, err)
+		ELog.ErrorAf("[Net] Msg=%v Marshal Err %v ", msgId, err)
 		return false
 	}
 
-	return s.AsyncSendMsg(msgID, datas)
+	return s.AsyncSendMsg(msgId, datas)
 }

@@ -91,9 +91,9 @@ func (c *Coder) ProcessMsg(datas []byte, sess enet.ISession) {
 	sess.GetSessionOnHandler().OnHandler(msgId, datas[msgStartIndex:])
 }
 
-func (c *Coder) FillNetStream(msgID uint32, datas []byte) ([]byte, error) {
+func (c *Coder) FillNetStream(msgId uint32, datas []byte) ([]byte, error) {
 	bodyBuff := bytes.NewBuffer([]byte{})
-	if err := binary.Write(bodyBuff, binary.BigEndian, msgID); err != nil {
+	if err := binary.Write(bodyBuff, binary.BigEndian, msgId); err != nil {
 		ELog.ErrorAf("FillNetStream MsgID Error=%v", err)
 	}
 

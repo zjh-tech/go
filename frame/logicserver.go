@@ -1,7 +1,7 @@
 package frame
 
 type IServerMsgHandler interface {
-	OnHandler(msgID uint32, datas []byte, sess *SSSession)
+	OnHandler(msgId uint32, datas []byte, sess *SSSession)
 }
 
 type ILogicServer interface {

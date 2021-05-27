@@ -41,7 +41,7 @@ func NewIdMaker(server_id int64) (*IdMaker, error) {
 	}, nil
 }
 
-func (m *IdMaker) next_id() (int64, error) {
+func (m *IdMaker) nextId() (int64, error) {
 	now := time.Now().UnixNano() / 1e6
 	if now < m.last_timestamp {
 		return 0, errors.New("Clock moved backwards")
@@ -67,7 +67,7 @@ func (m *IdMaker) next_id() (int64, error) {
 func (m *IdMaker) NextId() int64 {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	id, err := m.next_id()
+	id, err := m.nextId()
 	if err != nil {
 		ELog.Errorf("Error=%v", err)
 		GServer.Quit()
@@ -82,7 +82,7 @@ func (m *IdMaker) NextIds(num int) []int64 {
 	defer m.mutex.Unlock()
 	var err error
 	for i := 0; i < num; i++ {
-		ids[i], err = m.next_id()
+		ids[i], err = m.nextId()
 		if err != nil {
 			ELog.Errorf("Error=%v", err)
 			GServer.Quit()

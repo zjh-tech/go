@@ -164,8 +164,8 @@ func (s *SSSession) OnTerminate() {
 	s.logicServer.OnTerminate(s)
 }
 
-func (s *SSSession) OnHandler(msgID uint32, datas []byte) {
-	if msgID == uint32(framepb.S2SBaseMsgId_s2s_server_session_veriry_req_id) && s.IsListenType() {
+func (s *SSSession) OnHandler(msgId uint32, datas []byte) {
+	if msgId == uint32(framepb.S2SBaseMsgId_s2s_server_session_veriry_req_id) && s.IsListenType() {
 		verifyReq := &framepb.S2SServerSessionVeriryReq{}
 		err := proto.Unmarshal(datas, verifyReq)
 		if err != nil {
@@ -208,27 +208,27 @@ func (s *SSSession) OnHandler(msgID uint32, datas []byte) {
 		return
 	}
 
-	if msgID == uint32(framepb.S2SBaseMsgId_s2s_server_session_veriry_ack_id) && s.IsConnectType() {
+	if msgId == uint32(framepb.S2SBaseMsgId_s2s_server_session_veriry_ack_id) && s.IsConnectType() {
 		ELog.InfoAf("[SSSession] Remote [ID=%v,Type=%v,Ip=%v] Recv Verify Ack Ok", s.remoteServerID, s.remoteServerType, s.remoteOuter)
 		s.OnVerify()
 		return
 	}
 
-	if msgID == uint32(framepb.S2SBaseMsgId_s2s_server_session_ping_id) && s.IsListenType() {
+	if msgId == uint32(framepb.S2SBaseMsgId_s2s_server_session_ping_id) && s.IsListenType() {
 		ELog.DebugAf("[SSSession] Remote [ID=%v,Type=%v,Ip=%v] Recv Ping Send Pong", s.remoteServerID, s.remoteServerType, s.remoteOuter)
 		s.last_beat_heart_time = util.GetMillsecond()
 		s.AsyncSendMsg(uint32(framepb.S2SBaseMsgId_s2s_server_session_pong_id), nil)
 		return
 	}
 
-	if msgID == uint32(framepb.S2SBaseMsgId_s2s_server_session_pong_id) && s.IsConnectType() {
+	if msgId == uint32(framepb.S2SBaseMsgId_s2s_server_session_pong_id) && s.IsConnectType() {
 		ELog.DebugAf("[SSSession] Remote [ID=%v,Type=%v,Ip=%v] Recv Pong", s.remoteServerID, s.remoteServerType, s.remoteOuter)
 		s.last_beat_heart_time = util.GetMillsecond()
 		return
 	}
 
 	s.last_beat_heart_time = util.GetMillsecond()
-	s.logicServer.OnHandler(msgID, datas, s)
+	s.logicServer.OnHandler(msgId, datas, s)
 }
 
 //----------------------------------------------------------------------
@@ -347,17 +347,17 @@ func (s *SSSessionMgr) GetLogicServerFactory() ILogicServerFactory {
 	return s.logicServerFactory
 }
 
-func (s *SSSessionMgr) SendMsg(serverId uint64, msgID uint32, datas []byte) {
+func (s *SSSessionMgr) SendMsg(serverId uint64, msgId uint32, datas []byte) {
 	for _, session := range s.sess_map {
 		serversess := session.(*SSSession)
 		if serversess.remoteServerID == serverId {
-			serversess.AsyncSendMsg(msgID, datas)
+			serversess.AsyncSendMsg(msgId, datas)
 			return
 		}
 	}
 }
 
-func (s *SSSessionMgr) SendProtoMsg(serverId uint64, msgID uint32, msg proto.Message) bool {
+func (s *SSSessionMgr) SendProtoMsg(serverId uint64, msgId uint32, msg proto.Message) bool {
 	if serverId == 0 {
 		return false
 	}
@@ -365,7 +365,7 @@ func (s *SSSessionMgr) SendProtoMsg(serverId uint64, msgID uint32, msg proto.Mes
 	for _, session := range s.sess_map {
 		serversess := session.(*SSSession)
 		if serversess.remoteServerID == serverId {
-			serversess.AsyncSendProtoMsg(msgID, msg)
+			serversess.AsyncSendProtoMsg(msgId, msg)
 			return true
 		}
 	}
@@ -373,29 +373,29 @@ func (s *SSSessionMgr) SendProtoMsg(serverId uint64, msgID uint32, msg proto.Mes
 	return false
 }
 
-func (s *SSSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgID uint32, msg proto.Message) bool {
+func (s *SSSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgId uint32, msg proto.Message) bool {
 	serversess, ok := s.sess_map[sessionID]
 	if ok {
-		return serversess.AsyncSendProtoMsg(msgID, msg)
+		return serversess.AsyncSendProtoMsg(msgId, msg)
 	}
 
 	return false
 }
 
-func (s *SSSessionMgr) BroadMsg(serverType uint32, msgID uint32, datas []byte) {
+func (s *SSSessionMgr) BroadMsg(serverType uint32, msgId uint32, datas []byte) {
 	for _, session := range s.sess_map {
 		serversess := session.(*SSSession)
 		if serversess.remoteServerType == serverType {
-			serversess.AsyncSendMsg(msgID, datas)
+			serversess.AsyncSendMsg(msgId, datas)
 		}
 	}
 }
 
-func (s *SSSessionMgr) BroadProtoMsg(serverType uint32, msgID uint32, msg proto.Message) {
+func (s *SSSessionMgr) BroadProtoMsg(serverType uint32, msgId uint32, msg proto.Message) {
 	for _, session := range s.sess_map {
 		serversess := session.(*SSSession)
 		if serversess.remoteServerType == serverType {
-			serversess.AsyncSendProtoMsg(msgID, msg)
+			serversess.AsyncSendProtoMsg(msgId, msg)
 		}
 	}
 }

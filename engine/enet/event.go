@@ -2,16 +2,16 @@ package enet
 
 //Tcp
 type TcpEvent struct {
-	event_type uint32
-	conn       IConnection
-	datas      interface{}
+	eventType uint32
+	conn      IConnection
+	datas     interface{}
 }
 
 func NewTcpEvent(t uint32, c IConnection, datas interface{}) *TcpEvent {
 	return &TcpEvent{
-		event_type: t,
-		conn:       c,
-		datas:      datas,
+		eventType: t,
+		conn:      c,
+		datas:     datas,
 	}
 }
 
@@ -31,13 +31,13 @@ func (t *TcpEvent) ProcessMsg() bool {
 		return false
 	}
 
-	if t.event_type == ConnEstablishType {
+	if t.eventType == ConnEstablishType {
 		session.SetConnection(t.conn)
 		session.OnEstablish()
-	} else if t.event_type == ConnRecvMsgType {
+	} else if t.eventType == ConnRecvMsgType {
 		datas := t.datas.([]byte)
 		session.GetCoder().ProcessMsg(datas, session)
-	} else if t.event_type == ConnCloseType {
+	} else if t.eventType == ConnCloseType {
 		GConnectionMgr.Remove(t.conn.GetConnID())
 		session.SetConnection(nil)
 		session.OnTerminate()
@@ -47,25 +47,25 @@ func (t *TcpEvent) ProcessMsg() bool {
 
 //Http
 type HttpEvent struct {
-	http_conn IHttpConnection
-	msg_id    uint32
-	datas     []byte
+	httpConn IHttpConnection
+	msgId    uint32
+	datas    []byte
 }
 
-func NewHttpEvent(http_conn IHttpConnection, msg_id uint32, datas []byte) *HttpEvent {
+func NewHttpEvent(httpConn IHttpConnection, msgId uint32, datas []byte) *HttpEvent {
 	return &HttpEvent{
-		http_conn: http_conn,
-		msg_id:    msg_id,
-		datas:     datas,
+		httpConn: httpConn,
+		msgId:    msgId,
+		datas:    datas,
 	}
 }
 
 func (h *HttpEvent) ProcessMsg() bool {
-	if h.http_conn == nil {
+	if h.httpConn == nil {
 		ELog.ErrorA("[Net] ProcessMsg Run HttpConnection Is Nil")
 		return false
 	}
 
-	h.http_conn.OnHandler(h.msg_id, h.datas)
+	h.httpConn.OnHandler(h.msgId, h.datas)
 	return true
 }

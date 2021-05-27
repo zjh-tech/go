@@ -102,10 +102,10 @@ func (c *SDServerSession) Init() bool {
 	return true
 }
 
-func (c *SDServerSession) OnHandler(msgID uint32, datas []byte, sess *SDKSession) {
-	dealer := c.dealer.FindHandler(msgID)
+func (c *SDServerSession) OnHandler(msgId uint32, datas []byte, sess *SDKSession) {
+	dealer := c.dealer.FindHandler(msgId)
 	if dealer == nil {
-		ELog.ErrorAf("SDServerSession Can Not Find MsgID = %v", msgID)
+		ELog.ErrorAf("SDServerSession Can Not Find MsgID = %v", msgId)
 		return
 	}
 

@@ -40,32 +40,32 @@ const _ = proto.ProtoPackageIsVersion1
 type EClient2GameMsgId int32
 
 const (
-	EClient2GameMsgId_cs_invalid_msg_id          EClient2GameMsgId = 0
-	EClient2GameMsgId_cs_logic_min_msg_id        EClient2GameMsgId = 1
-	EClient2GameMsgId_sc_logic_max_msg_id        EClient2GameMsgId = 60000
-	EClient2GameMsgId_cs_engine_min_msg_id       EClient2GameMsgId = 60001
+	EClient2GameMsgId_cs_invalid_msgId           EClient2GameMsgId = 0
+	EClient2GameMsgId_cs_logic_min_msgId         EClient2GameMsgId = 1
+	EClient2GameMsgId_sc_logic_max_msgId         EClient2GameMsgId = 60000
+	EClient2GameMsgId_cs_engine_min_msgId        EClient2GameMsgId = 60001
 	EClient2GameMsgId_c2s_client_session_ping_id EClient2GameMsgId = 60002
 	EClient2GameMsgId_s2c_client_session_pong_id EClient2GameMsgId = 60003
-	EClient2GameMsgId_sc_engine_min_msg_id       EClient2GameMsgId = 65535
+	EClient2GameMsgId_sc_engine_min_msgId        EClient2GameMsgId = 65535
 )
 
 var EClient2GameMsgId_name = map[int32]string{
-	0:     "cs_invalid_msg_id",
-	1:     "cs_logic_min_msg_id",
-	60000: "sc_logic_max_msg_id",
-	60001: "cs_engine_min_msg_id",
+	0:     "cs_invalid_msgId",
+	1:     "cs_logic_min_msgId",
+	60000: "sc_logic_max_msgId",
+	60001: "cs_engine_min_msgId",
 	60002: "c2s_client_session_ping_id",
 	60003: "s2c_client_session_pong_id",
-	65535: "sc_engine_min_msg_id",
+	65535: "sc_engine_min_msgId",
 }
 var EClient2GameMsgId_value = map[string]int32{
-	"cs_invalid_msg_id":          0,
-	"cs_logic_min_msg_id":        1,
-	"sc_logic_max_msg_id":        60000,
-	"cs_engine_min_msg_id":       60001,
+	"cs_invalid_msgId":           0,
+	"cs_logic_min_msgId":         1,
+	"sc_logic_max_msgId":         60000,
+	"cs_engine_min_msgId":        60001,
 	"c2s_client_session_ping_id": 60002,
 	"s2c_client_session_pong_id": 60003,
-	"sc_engine_min_msg_id":       65535,
+	"sc_engine_min_msgId":        65535,
 }
 
 func (x EClient2GameMsgId) String() string {
@@ -76,8 +76,8 @@ func (EClient2GameMsgId) EnumDescriptor() ([]byte, []int) { return fileDescripto
 type S2SBaseMsgId int32
 
 const (
-	S2SBaseMsgId_s2s_invalid_msg_id               S2SBaseMsgId = 0
-	S2SBaseMsgId_s2s_engine_min_msg_id            S2SBaseMsgId = 1
+	S2SBaseMsgId_s2s_invalid_msgId                S2SBaseMsgId = 0
+	S2SBaseMsgId_s2s_engine_min_msgId             S2SBaseMsgId = 1
 	S2SBaseMsgId_s2s_server_session_veriry_req_id S2SBaseMsgId = 2
 	S2SBaseMsgId_s2s_server_session_veriry_ack_id S2SBaseMsgId = 3
 	S2SBaseMsgId_s2s_server_session_ping_id       S2SBaseMsgId = 4
@@ -86,12 +86,12 @@ const (
 	S2SBaseMsgId_s2s_client_session_pong_id       S2SBaseMsgId = 7
 	S2SBaseMsgId_service_discovery_req_id         S2SBaseMsgId = 8
 	S2SBaseMsgId_service_discovery_ack_id         S2SBaseMsgId = 9
-	S2SBaseMsgId_s2s_engine_max_msg_id            S2SBaseMsgId = 300
+	S2SBaseMsgId_s2s_engine_max_msgId             S2SBaseMsgId = 300
 )
 
 var S2SBaseMsgId_name = map[int32]string{
-	0:   "s2s_invalid_msg_id",
-	1:   "s2s_engine_min_msg_id",
+	0:   "s2s_invalid_msgId",
+	1:   "s2s_engine_min_msgId",
 	2:   "s2s_server_session_veriry_req_id",
 	3:   "s2s_server_session_veriry_ack_id",
 	4:   "s2s_server_session_ping_id",
@@ -100,11 +100,11 @@ var S2SBaseMsgId_name = map[int32]string{
 	7:   "s2s_client_session_pong_id",
 	8:   "service_discovery_req_id",
 	9:   "service_discovery_ack_id",
-	300: "s2s_engine_max_msg_id",
+	300: "s2s_engine_max_msgId",
 }
 var S2SBaseMsgId_value = map[string]int32{
-	"s2s_invalid_msg_id":               0,
-	"s2s_engine_min_msg_id":            1,
+	"s2s_invalid_msgId":                0,
+	"s2s_engine_min_msgId":             1,
 	"s2s_server_session_veriry_req_id": 2,
 	"s2s_server_session_veriry_ack_id": 3,
 	"s2s_server_session_ping_id":       4,
@@ -113,7 +113,7 @@ var S2SBaseMsgId_value = map[string]int32{
 	"s2s_client_session_pong_id":       7,
 	"service_discovery_req_id":         8,
 	"service_discovery_ack_id":         9,
-	"s2s_engine_max_msg_id":            300,
+	"s2s_engine_max_msgId":             300,
 }
 
 func (x S2SBaseMsgId) String() string {

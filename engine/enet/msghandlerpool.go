@@ -6,36 +6,36 @@ import "runtime"
 //Go  每个Session有个Channel,每个Entity有个Channel,并发的数量可以动态(建议使用这种模式)
 
 type MsgHandlerPool struct {
-	pool_size       int
-	event_chan_sets []chan IEvent
+	poolSize      int
+	eventChanSets []chan IEvent
 }
 
-func NewMsgHandlerPool(pool_size, chan_size int) *MsgHandlerPool {
+func NewMsgHandlerPool(poolSize, chanSize int) *MsgHandlerPool {
 	cpu_num := runtime.NumCPU()
-	if pool_size <= cpu_num {
-		pool_size = cpu_num
+	if poolSize <= cpu_num {
+		poolSize = cpu_num
 	}
 
 	chan_min_size := 100000
-	if chan_size <= chan_min_size {
-		chan_size = chan_min_size
+	if chanSize <= chan_min_size {
+		chanSize = chan_min_size
 	}
 
 	obj := &MsgHandlerPool{
-		pool_size:       pool_size,
-		event_chan_sets: make([]chan IEvent, 0),
+		poolSize:      poolSize,
+		eventChanSets: make([]chan IEvent, 0),
 	}
 
-	for i := 0; i < pool_size; i++ {
-		event_chan := make(chan IEvent, chan_size)
-		obj.event_chan_sets = append(obj.event_chan_sets, event_chan)
+	for i := 0; i < poolSize; i++ {
+		event_chan := make(chan IEvent, chanSize)
+		obj.eventChanSets = append(obj.eventChanSets, event_chan)
 	}
 
 	return obj
 }
 
 func (a *MsgHandlerPool) Init() bool {
-	for i := 0; i < a.pool_size; i++ {
+	for i := 0; i < a.poolSize; i++ {
 		go a.run(i)
 	}
 
@@ -43,10 +43,10 @@ func (a *MsgHandlerPool) Init() bool {
 }
 
 func (a *MsgHandlerPool) run(index int) {
-	evt_queue := a.event_chan_sets[index]
+	evtQueue := a.eventChanSets[index]
 	for {
 		select {
-		case evt := <-evt_queue:
+		case evt := <-evtQueue:
 			{
 				DoMsgHandler(evt)
 			}
@@ -69,8 +69,8 @@ func (a *MsgHandlerPool) PushEvent(evt IEvent) bool {
 		return false
 	}
 
-	worker_id := int(sess.GetSessID()) % a.pool_size
-	a.event_chan_sets[worker_id] <- evt
+	workerId := int(sess.GetSessID()) % a.poolSize
+	a.eventChanSets[workerId] <- evt
 	return true
 }
 

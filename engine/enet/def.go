@@ -11,8 +11,8 @@ const (
 type SessionType uint32
 
 const (
-	SESS_CONNECT_TYPE SessionType = iota
-	SESS_LISTEN_TYPE
+	SessConnectType SessionType = iota
+	SessListenType
 )
 
 //var GSendQps int64 = 0

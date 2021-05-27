@@ -13,15 +13,15 @@ message s2c_client_session_pong {
 } 
 
 enum eClient2GameMsgId{
-    cs_invalid_msg_id             = 0;
+    cs_invalid_msgId             = 0;
 
-    cs_logic_min_msg_id        = 1;
-    sc_logic_max_msg_id        = 60000;
+    cs_logic_min_msgId        = 1;
+    sc_logic_max_msgId        = 60000;
 
-    cs_engine_min_msg_id       = 60001; 
+    cs_engine_min_msgId       = 60001; 
     c2s_client_session_ping_id = 60002;
     s2c_client_session_pong_id = 60003;
-    sc_engine_min_msg_id       = 65535; 
+    sc_engine_min_msgId       = 65535; 
 }
 
 
@@ -98,9 +98,9 @@ message service_discovery_ack {
 //------------sg-------------
 
 enum S2SBaseMsgId{
-    s2s_invalid_msg_id             = 0;
+    s2s_invalid_msgId             = 0;
 
-    s2s_engine_min_msg_id          = 1; 
+    s2s_engine_min_msgId          = 1; 
 
     s2s_server_session_veriry_req_id = 2;
     s2s_server_session_veriry_ack_id = 3; 
@@ -110,6 +110,6 @@ enum S2SBaseMsgId{
     s2s_client_session_pong_id = 7; 
     service_discovery_req_id = 8;
     service_discovery_ack_id = 9;          
-    s2s_engine_max_msg_id          = 300;
+    s2s_engine_max_msgId          = 300;
 }
 
