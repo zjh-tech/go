@@ -4,7 +4,7 @@ type FuncType func(...interface{})
 type ArgType []interface{}
 
 type ITimerMgr interface {
-	Update(loop_count int)
+	Update(loopCount int)
 }
 
 type ITimerRegister interface {

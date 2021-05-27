@@ -135,8 +135,8 @@ func (n *Net) Connect(addr string, sess ISession) {
 	n.conn_queue <- connEvt
 }
 
-func (n *Net) Run(loop_count int) bool {
-	for i := 0; i < loop_count; i++ {
+func (n *Net) Run(loopCount int) bool {
+	for i := 0; i < loopCount; i++ {
 		select {
 		case evt, ok := <-n.evt_queue.GetEventQueue():
 			tcp_evt := evt.(*TcpEvent)

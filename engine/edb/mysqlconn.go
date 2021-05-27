@@ -11,64 +11,64 @@ type MysqlConn struct {
 
 	dsn string
 
-	sql_db *sql.DB
+	sqlDb *sql.DB
 
-	cmd_queue chan IMysqlCommand
+	cmdQueue chan IMysqlCommand
 
-	exit_chan chan struct{}
+	exitChan chan struct{}
 
-	sql_tx *sql.Tx
+	sqlTx *sql.Tx
 }
 
-func new_mysql_conn(name string) *MysqlConn {
+func newMysqlConn(name string) *MysqlConn {
 	conn := &MysqlConn{
-		name:      name,
-		cmd_queue: make(chan IMysqlCommand, DB_WAIT_QUEUE_CHAN_SIZE),
-		exit_chan: make(chan struct{}),
-		sql_tx:    nil,
-		sql_db:    nil,
+		name:     name,
+		cmdQueue: make(chan IMysqlCommand, DbWaitChanSize),
+		exitChan: make(chan struct{}),
+		sqlTx:    nil,
+		sqlDb:    nil,
 	}
 
 	return conn
 }
 
 func (m *MysqlConn) connect(dsn string) error {
-	sql_db, err := sql.Open("mysql", dsn)
+	sqlDb, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return err
 	}
 
-	err = sql_db.Ping()
+	err = sqlDb.Ping()
 	if err != nil {
 		return err
 	}
 
-	m.sql_db = sql_db
+	m.sqlDb = sqlDb
 	m.dsn = dsn
 
-	m.sql_db.SetMaxOpenConns(1)
-	m.sql_db.SetConnMaxLifetime(0)
+	m.sqlDb.SetMaxOpenConns(1)
+	m.sqlDb.SetConnMaxLifetime(0)
 	m.run()
 
 	return nil
 }
 
 func (m *MysqlConn) AddComand(command IMysqlCommand) {
-	m.cmd_queue <- command
+	m.cmdQueue <- command
 }
 
 func (m *MysqlConn) run() {
 	go func() {
 		for {
 			select {
-			case cmd, ok := <-m.cmd_queue:
+			case cmd, ok := <-m.cmdQueue:
 				if !ok {
 					return
 				}
 
 				cmd.OnExecuteSql(m)
 				GDBModule.AddExecutedCommand(cmd)
-			case <-m.exit_chan:
+			case <-m.exitChan:
 				ELog.InfoAf("Name %v MysqlConn Exit", m.name)
 				return
 			}
@@ -77,22 +77,22 @@ func (m *MysqlConn) run() {
 }
 
 func (m *MysqlConn) FindSqlDb() *sql.DB {
-	return m.sql_db
+	return m.sqlDb
 }
 
 func (m *MysqlConn) QueryWithResult(sql string) (IMysqlRecordSet, error) {
-	rows, err := m.sql_db.Query(sql)
+	rows, err := m.sqlDb.Query(sql)
 	if err != nil {
 		ELog.ErrorAf("[Mysql] QueryWithResult Sql=%v, Error=%v", sql, err)
 		return nil, err
 	}
 
 	ELog.InfoAf("[Mysql] QueryWithResult Sql=%v Success", sql)
-	return NewMysqlRecordSet(rows, DB_DEFAULT_AFFECTED_ROWS, DB_DEFAULT_INSERT_ID), nil
+	return NewMysqlRecordSet(rows, DbDefaultAffectedRows, DbDefaultInsertId), nil
 }
 
 func (m *MysqlConn) QueryWithoutResult(sql string) (IMysqlRecordSet, error) {
-	res, err := m.sql_db.Exec(sql)
+	res, err := m.sqlDb.Exec(sql)
 	if err != nil {
 		ELog.InfoAf("[Mysql] QueryWithoutResult Sql=%v, Error=%v", sql, err)
 		return nil, err
@@ -116,37 +116,37 @@ func (m *MysqlConn) QueryWithoutResult(sql string) (IMysqlRecordSet, error) {
 }
 
 func (m *MysqlConn) BeginTransact() {
-	if m.sql_tx != nil {
+	if m.sqlTx != nil {
 		ELog.ErrorAf("[MysqlConn] Begin SqlTx Not Nil")
-		m.sql_tx = nil
+		m.sqlTx = nil
 	}
 
 	var err error
-	m.sql_tx, err = m.sql_db.Begin()
+	m.sqlTx, err = m.sqlDb.Begin()
 	if err != nil {
 		ELog.InfoAf("[MysqlConn] Begin Error=%v", err)
 	}
 }
 
 func (m *MysqlConn) CommitTransact() {
-	if m.sql_tx == nil {
+	if m.sqlTx == nil {
 		return
 	}
 
-	err := m.sql_tx.Commit()
-	m.sql_tx = nil
+	err := m.sqlTx.Commit()
+	m.sqlTx = nil
 	if err != nil {
 		ELog.InfoAf("[MysqlConn] Commit Error=%v", err)
 	}
 }
 
 func (m *MysqlConn) RollbackTransact() {
-	if m.sql_tx == nil {
+	if m.sqlTx == nil {
 		return
 	}
 
-	err := m.sql_tx.Rollback()
-	m.sql_tx = nil
+	err := m.sqlTx.Rollback()
+	m.sqlTx = nil
 	if err != nil {
 		ELog.InfoAf("[MysqlConn] Rollback Error=%v", err)
 	}

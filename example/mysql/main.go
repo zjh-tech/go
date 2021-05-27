@@ -112,9 +112,9 @@ func TestSync() {
 
 			_, insertErr := conn.QueryWithoutResult(insert_sql)
 			if insertErr != nil {
-				return nil, edb.DB_EXEC_FAIL, insertErr
+				return nil, edb.DbExecFail, insertErr
 			}
-			return nil, edb.DB_EXEC_SUCCESS, nil
+			return nil, edb.DbExecSuccess, nil
 		}, func(recordSet edb.IMysqlRecordSet, attach []interface{}, errorCode int32, err error) {
 			qps_count++
 			end_tick := util.GetMillsecond()
@@ -152,15 +152,15 @@ func TestSync() {
 
 			result, selectErr := conn.QueryWithResult(select_sql)
 			if selectErr != nil {
-				return nil, edb.DB_EXEC_FAIL, selectErr
+				return nil, edb.DbExecFail, selectErr
 			}
 
 			rc := result.GetRecordSet()
 			if len(rc) >= 1 {
-				return nil, edb.DB_EXEC_FAIL, nil
+				return nil, edb.DbExecFail, nil
 			}
 
-			return nil, edb.DB_EXEC_SUCCESS, nil
+			return nil, edb.DbExecSuccess, nil
 		}, func(recordSet edb.IMysqlRecordSet, attach []interface{}, errorCode int32, err error) {
 			qps_count++
 			end_tick := util.GetMillsecond()

@@ -9,43 +9,43 @@ import (
 )
 
 type DBModule struct {
-	db_table_max_count uint64
-	db_conn_max_count  uint64
-	db_conn_specs      []*DBConnSpec
-	executed_queus     chan IMysqlCommand
-	conns              map[uint64]IMysqlConn
+	dbTableMaxCount uint64
+	connMaxCount    uint64
+	connSpecs       []*DBConnSpec
+	executedQueue   chan IMysqlCommand
+	conns           map[uint64]IMysqlConn
 }
 
-func (d *DBModule) Init(db_conn_max_count uint64, db_table_max_count uint64, db_conn_specs []*DBConnSpec) error {
-	d.db_conn_max_count = db_conn_max_count
-	d.db_table_max_count = db_table_max_count
-	d.db_conn_specs = db_conn_specs
+func (d *DBModule) Init(connMaxCount uint64, dbTableMaxCount uint64, connSpecs []*DBConnSpec) error {
+	d.connMaxCount = connMaxCount
+	d.dbTableMaxCount = dbTableMaxCount
+	d.connSpecs = connSpecs
 
-	if d.db_conn_max_count == 0 {
+	if d.connMaxCount == 0 {
 		return errors.New("[DBModule] No Mysql Connect")
 	}
 
-	if d.db_conn_max_count != uint64(len(d.db_conn_specs)) {
+	if d.connMaxCount != uint64(len(d.connSpecs)) {
 		return errors.New("[DBModule] Mysql No Match")
 	}
 
-	for i := uint64(0); i < d.db_conn_max_count; i++ {
-		dbNameSlices := strings.Split(d.db_conn_specs[i].Name, "_")
+	for i := uint64(0); i < d.connMaxCount; i++ {
+		dbNameSlices := strings.Split(d.connSpecs[i].Name, "_")
 		if len(dbNameSlices) != 2 {
 			return errors.New("[DBModule] Mysql Index Error")
 		}
 
 		dbIndex, _ := convert.Str2Uint64(dbNameSlices[1])
 		connErr := d.connect(dbIndex,
-			d.db_conn_specs[i].Name, d.db_conn_specs[i].Ip,
-			d.db_conn_specs[i].Port, d.db_conn_specs[i].User,
-			d.db_conn_specs[i].Password, d.db_conn_specs[i].Charset)
+			d.connSpecs[i].Name, d.connSpecs[i].Ip,
+			d.connSpecs[i].Port, d.connSpecs[i].User,
+			d.connSpecs[i].Password, d.connSpecs[i].Charset)
 
 		if connErr != nil {
 			ELog.Errorf("[DBModule] Connect Mysql DBName=%v DBIp=%v,DBPort=%v, Error = %v",
-				d.db_conn_specs[i].Name,
-				d.db_conn_specs[i].Ip,
-				d.db_conn_specs[i].Port,
+				d.connSpecs[i].Name,
+				d.connSpecs[i].Ip,
+				d.connSpecs[i].Port,
 				connErr)
 			return connErr
 		}
@@ -58,21 +58,21 @@ func (d *DBModule) UnInit() {
 	ELog.InfoA("[DB] Stop")
 }
 
-func (d *DBModule) connect(db_index uint64, db_name string, ip string, port uint32, user string, password string, charset string) error {
-	if _, ok := d.conns[db_index]; ok {
-		errStr := fmt.Sprintln("[Mysql] DBIndx =%v DBName=%v Ip=%v Port=%v Exist", db_index, db_name, ip, port)
+func (d *DBModule) connect(dbIndex uint64, db_name string, ip string, port uint32, user string, password string, charset string) error {
+	if _, ok := d.conns[dbIndex]; ok {
+		errStr := fmt.Sprintln("[Mysql] DBIndex =%v DBName=%v Ip=%s Port=%v Exist", dbIndex, db_name, ip, port)
 		return errors.New(errStr)
 	}
 
 	dsn := fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=%s", user, password, "tcp", ip, port, db_name, charset)
 	name := db_name
-	mysqlConn := new_mysql_conn(name)
+	mysqlConn := newMysqlConn(name)
 	if err := mysqlConn.connect(dsn); err != nil {
 		return err
 	}
 
-	ELog.Infof("[Mysql] DbIndex=%v DBName=%v Connect Ip=%v Port=%v  Success", db_index, db_name, ip, port)
-	d.conns[db_index] = mysqlConn
+	ELog.Infof("[Mysql] DbIndex=%v DBName=%v Connect Ip=%v Port=%v  Success", dbIndex, db_name, ip, port)
+	d.conns[dbIndex] = mysqlConn
 	return nil
 }
 
@@ -81,15 +81,15 @@ func (d *DBModule) connect(db_index uint64, db_name string, ip string, port uint
 // database_1  table_01  table_11 table_91
 // ...
 func (d *DBModule) HashDBIndex(uid uint64) uint64 {
-	ELog.DebugAf("[DBModule] UID=%v Hash DBIndex=%v", uid, uid%d.db_conn_max_count)
-	return uid % d.db_conn_max_count
+	ELog.DebugAf("[DBModule] UID=%v Hash DBIndex=%v", uid, uid%d.connMaxCount)
+	return uid % d.connMaxCount
 }
 
 func (d *DBModule) HashTableIndex(uid uint64) uint64 {
-	db_index := d.HashDBIndex(uid)
-	db_table_index := uid % d.db_table_max_count
-	ELog.DebugAf("[DBModule] UID=%v Hash TableIndex=%v", uid, db_table_index*10+db_index)
-	return db_table_index*10 + db_index
+	dbIndex := d.HashDBIndex(uid)
+	db_table_index := uid % d.dbTableMaxCount
+	ELog.DebugAf("[DBModule] UID=%v Hash TableIndex=%v", uid, db_table_index*10+dbIndex)
+	return db_table_index*10 + dbIndex
 }
 
 func (d *DBModule) GetTableNameByUID(table_name string, uid uint64) string {
@@ -104,10 +104,10 @@ func (d *DBModule) AddCommand(uid uint64, command IMysqlCommand) bool {
 		return false
 	}
 
-	db_index := d.HashDBIndex(uid)
-	conn, ok := d.conns[db_index]
+	dbIndex := d.HashDBIndex(uid)
+	conn, ok := d.conns[dbIndex]
 	if !ok {
-		ELog.ErrorAf("[DBModule] Mysql UId=%v DBIndex=%v Group Is Not Exist", uid, db_index)
+		ELog.ErrorAf("[DBModule] Mysql UId=%v DBIndex=%v Group Is Not Exist", uid, dbIndex)
 		return false
 	}
 
@@ -116,10 +116,10 @@ func (d *DBModule) AddCommand(uid uint64, command IMysqlCommand) bool {
 }
 
 func (d *DBModule) GetMysqlConn(uid uint64) IMysqlConn {
-	db_index := d.HashDBIndex(uid)
-	conn, ok := d.conns[db_index]
+	dbIndex := d.HashDBIndex(uid)
+	conn, ok := d.conns[dbIndex]
 	if !ok {
-		ELog.ErrorAf("Mysql  UId=%v DBIndex=%v  Is Not Exist", uid, db_index)
+		ELog.ErrorAf("Mysql  UId=%v DBIndex=%v  Is Not Exist", uid, dbIndex)
 		return nil
 	}
 
@@ -127,13 +127,13 @@ func (d *DBModule) GetMysqlConn(uid uint64) IMysqlConn {
 }
 
 func (d *DBModule) AddExecutedCommand(command IMysqlCommand) {
-	d.executed_queus <- command
+	d.executedQueue <- command
 }
 
-func (d *DBModule) Run(loop_count int) bool {
-	for i := 0; i < loop_count; i++ {
+func (d *DBModule) Run(loopCount int) bool {
+	for i := 0; i < loopCount; i++ {
 		select {
-		case cmd, ok := <-d.executed_queus:
+		case cmd, ok := <-d.executedQueue:
 			if !ok {
 				return false
 			}
@@ -152,7 +152,7 @@ var GDBModule *DBModule
 
 func init() {
 	GDBModule = &DBModule{
-		conns:          make(map[uint64]IMysqlConn),
-		executed_queus: make(chan IMysqlCommand, DB_EXECUTED_QUEUE_CHAN_SIZE),
+		conns:         make(map[uint64]IMysqlConn),
+		executedQueue: make(chan IMysqlCommand, DbExecutedChanSize),
 	}
 }

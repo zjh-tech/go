@@ -6,58 +6,58 @@ import (
 )
 
 type MysqlRecordSet struct {
-	sql_rows      *sql.Rows
-	recordset     []map[string]string
-	affected_rows int64
-	insert_id     int64
+	sqlRows      *sql.Rows
+	recordSet    []map[string]string
+	affectedRows int64
+	insertId     int64
 }
 
-func NewMysqlRecordSet(sql_rows *sql.Rows, affected_rows int64, insert_id int64) *MysqlRecordSet {
-	recordset := &MysqlRecordSet{
-		sql_rows:      sql_rows,
-		affected_rows: affected_rows,
-		insert_id:     insert_id,
+func NewMysqlRecordSet(sqlRows *sql.Rows, affectedRows int64, insertId int64) *MysqlRecordSet {
+	recordSet := &MysqlRecordSet{
+		sqlRows:      sqlRows,
+		affectedRows: affectedRows,
+		insertId:     insertId,
 	}
-	recordset.build()
-	return recordset
+	recordSet.build()
+	return recordSet
 }
 
 func (m *MysqlRecordSet) build() {
-	if m.sql_rows == nil {
+	if m.sqlRows == nil {
 		return
 	}
 
 	defer func() {
-		m.sql_rows.Close()
-		m.sql_rows = nil
+		m.sqlRows.Close()
+		m.sqlRows = nil
 	}()
 
-	columns, _ := m.sql_rows.Columns()
+	columns, _ := m.sqlRows.Columns()
 	cache := make([]interface{}, len(columns))
 	values := make([]sql.RawBytes, len(columns))
 	for index, _ := range cache {
 		cache[index] = &values[index]
 	}
 
-	for m.sql_rows.Next() {
-		_ = m.sql_rows.Scan(cache...)
+	for m.sqlRows.Next() {
+		_ = m.sqlRows.Scan(cache...)
 		item := make(map[string]string)
 		for k, v := range cache {
 			content := reflect.ValueOf(v).Interface().(*sql.RawBytes)
 			item[columns[k]] = string(*content)
 		}
-		m.recordset = append(m.recordset, item)
+		m.recordSet = append(m.recordSet, item)
 	}
 }
 
 func (m *MysqlRecordSet) GetRecordSet() []map[string]string {
-	return m.recordset
+	return m.recordSet
 }
 
 func (m *MysqlRecordSet) GetAffectRows() int64 {
-	return m.affected_rows
+	return m.affectedRows
 }
 
 func (m *MysqlRecordSet) GetInsertId() int64 {
-	return m.insert_id
+	return m.insertId
 }

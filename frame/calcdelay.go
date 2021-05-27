@@ -31,8 +31,8 @@ const (
 //	cur_min := uint64(cur_time.Minute())
 //	cur_sec := uint64(cur_time.Second())
 //
-//	remain_time := PER_HOUR - (PER_MINUTE*cur_min + PER_SECOND*cur_sec)
-//	delay := remain_time % (PER_MINUTE * min)
+//	remainTime := PER_HOUR - (PER_MINUTE*cur_min + PER_SECOND*cur_sec)
+//	delay := remainTime % (PER_MINUTE * min)
 //	return delay
 //}
 

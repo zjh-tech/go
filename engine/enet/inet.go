@@ -13,7 +13,7 @@ type INet interface {
 	PushMultiHttpEvent(IHttpEvent)
 	Connect(addr string, sess ISession)
 	Listen(addr string, factory ISessionFactory, listen_max_count int) bool
-	Run(loop_count int) bool
+	Run(loopCount int) bool
 }
 
 type ICoder interface {

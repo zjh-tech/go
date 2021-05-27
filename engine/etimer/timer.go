@@ -5,39 +5,39 @@ import (
 )
 
 type Timer struct {
-	uid          uint64
-	register_eid uint32
-	register_uid uint64
-	delay        uint64
-	desc         string
-	repeat       bool
-	rotation     int64
-	slot         uint64
-	cb           FuncType
-	args         ArgType
-	state        TimerState
-	register     *TimerRegister
+	uid         uint64
+	registerEid uint32
+	registerUid uint64
+	delay       uint64
+	desc        string
+	repeat      bool
+	rotation    int64
+	slot        uint64
+	cb          FuncType
+	args        ArgType
+	state       TimerState
+	register    *TimerRegister
 }
 
-func new_timer(register_eid uint32, register_uid uint64, uid uint64, delay uint64, desc string, repeat bool, cb FuncType, args ArgType, register *TimerRegister) *Timer {
+func new_timer(registerEid uint32, registerUid uint64, uid uint64, delay uint64, desc string, repeat bool, cb FuncType, args ArgType, register *TimerRegister) *Timer {
 	timer := &Timer{
-		register_eid: register_eid,
-		register_uid: register_uid,
-		uid:          uid,
-		delay:        delay,
-		desc:         desc,
-		repeat:       repeat,
-		cb:           cb,
-		args:         args,
-		state:        TimerInvalidState,
-		register:     register,
+		registerEid: registerEid,
+		registerUid: registerUid,
+		uid:         uid,
+		delay:       delay,
+		desc:        desc,
+		repeat:      repeat,
+		cb:          cb,
+		args:        args,
+		state:       TimerInvalidState,
+		register:    register,
 	}
 	return timer
 }
 
 func (t *Timer) Kill() {
 	t.state = TimerKilledState
-	ELog.DebugAf("[Timer] desc=%v id %v-%v-%v Kill State", t.desc, t.register_uid, t.uid, t.register_eid)
+	ELog.DebugAf("[Timer] desc=%v id %v-%v-%v Kill State", t.desc, t.registerUid, t.uid, t.registerEid)
 }
 
 func (t *Timer) Call() {
@@ -50,18 +50,18 @@ func (t *Timer) Call() {
 	t.cb(t.args...)
 }
 
-func (t *Timer) get_remain_time() uint64 {
-	remain_time := uint64(0)
+func (t *Timer) getRemainTime() uint64 {
+	remainTime := uint64(0)
 	if t.state != TimerRunningState {
-		return remain_time
+		return remainTime
 	}
 
-	cur_slot := GTimerMgr.GetCurSlot()
-	if cur_slot < t.slot {
-		remain_time = uint64(t.rotation)*MaxSlotSize + t.slot - cur_slot
+	curSlot := GTimerMgr.GetCurSlot()
+	if curSlot < t.slot {
+		remainTime = uint64(t.rotation)*MaxSlotSize + t.slot - curSlot
 	} else {
-		remain_time = uint64(t.rotation)*MaxSlotSize + (MaxSlotSize - cur_slot + t.slot)
+		remainTime = uint64(t.rotation)*MaxSlotSize + (MaxSlotSize - curSlot + t.slot)
 	}
 
-	return remain_time
+	return remainTime
 }

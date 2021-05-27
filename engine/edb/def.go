@@ -12,15 +12,15 @@ type DBConnSpec struct {
 }
 
 const (
-	DB_EXEC_SUCCESS int32 = 10000
-	DB_EXEC_FAIL    int32 = 10001
+	DbExecSuccess int32 = 10000
+	DbExecFail    int32 = 10001
 )
 
-const DB_DEFAULT_INSERT_ID int64 = 0
-const DB_DEFAULT_AFFECTED_ROWS int64 = 0
+const DbDefaultInsertId int64 = 0
+const DbDefaultAffectedRows int64 = 0
 
-const DB_WAIT_QUEUE_CHAN_SIZE = 1024 * 10 * 10
-const DB_EXECUTED_QUEUE_CHAN_SIZE = 1024 * 10 * 10
+const DbWaitChanSize = 1024 * 10 * 10
+const DbExecutedChanSize = 1024 * 10 * 10
 
 const DBMajorVersion = 1
 const DBMinorVersion = 1
