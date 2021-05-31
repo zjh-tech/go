@@ -26,13 +26,12 @@ type IServerFacade interface {
 }
 
 type Server struct {
-	configPath      string
-	terminate       bool
-	localServerId   uint64
-	localServerType uint32
-	localIp         string
-	localToken      string
-	logger          *elog.Logger
+	configPath string
+	terminate  bool
+	srvCfg     *ServerCfg
+	logger     *elog.Logger
+	ip         string
+	state      uint32
 }
 
 func (s *Server) IsQuit() bool {
@@ -44,20 +43,24 @@ func (s *Server) Quit() {
 	s.terminate = true
 }
 
-func (s *Server) GetLocalServerID() uint64 {
-	return s.localServerId
+func (s *Server) GetServerId() uint64 {
+	return s.srvCfg.ServerInfo.ServerId
 }
 
-func (s *Server) GetLocalToken() string {
-	return s.localToken
+func (s *Server) GetToken() string {
+	return s.srvCfg.ServerInfo.Token
 }
 
-func (s *Server) GetLocalServerType() uint32 {
-	return s.localServerType
+func (s *Server) GetServerType() uint32 {
+	return s.srvCfg.ServerInfo.ServerType
 }
 
-func (s *Server) GetLocalIp() string {
-	return s.localIp
+func (s *Server) GetIp() string {
+	return s.ip
+}
+
+func (s *Server) GetSrvCfg() *ServerCfg {
+	return s.srvCfg
 }
 
 func (s *Server) GetLogger() *elog.Logger {
@@ -66,6 +69,14 @@ func (s *Server) GetLogger() *elog.Logger {
 
 func (s *Server) GetConfigPath() string {
 	return s.configPath
+}
+
+func (s *Server) GetState() uint32 {
+	return s.state
+}
+
+func (s *Server) SetState(state uint32) {
+	s.state = state
 }
 
 func (s *Server) Init() bool {
@@ -77,43 +88,58 @@ func (s *Server) Init() bool {
 	s.configPath = configPath
 	s.terminate = false
 
-	serverCfgPath := s.GetConfigPath() + "/serverCfg.xml"
+	serverCfgPath := s.GetConfigPath() + "/config/server_cfg.yaml"
 	if serverCfg, readErr := ReadServerCfg(serverCfgPath); readErr != nil {
 		return false
 	} else {
-		GServerCfg = serverCfg
+		s.srvCfg = serverCfg
 	}
 
-	s.localServerId = GServerCfg.ServerId
-	s.localServerType = GServerCfg.ServerType
-	s.localToken = GServerCfg.Token
-	s.localIp, _ = util.GetLocalIp()
+	s.ip, _ = util.GetLocalIp()
 
 	//Log
-	s.logger = elog.NewLogger(GServerCfg.LogDir, GServerCfg.LogLevel)
+	s.logger = elog.NewLogger(s.srvCfg.LogInfo.Path, s.srvCfg.LogInfo.Level)
 	s.logger.Init()
 	s.initModulesLog()
 	ELog.Info("Server Log System Init Success")
 	s.printModulesVersion()
 
+	if s.GetServerType() == 0 {
+		ELog.Error("Server ServerType = 0 Error")
+		return false
+	}
+
+	if s.GetServerId() == 0 {
+		ELog.Error("Server ServerID = 0")
+		return false
+	}
+
 	rand.Seed(time.Now().UnixNano())
+	//Redis
+	if s.srvCfg.RedisInfo != nil {
+		redisClient, connErr := eredis.ConnectRedis(s.srvCfg.RedisInfo.Host, s.srvCfg.RedisInfo.Port, s.srvCfg.RedisInfo.Password)
+		if connErr != nil {
+			ELog.Errorf("Redis Host=%v, Port=%v, Password=%v Connect Error", s.srvCfg.RedisInfo.Host, s.srvCfg.RedisInfo.Port, s.srvCfg.RedisInfo.Password)
+			return false
+		} else {
+			eredis.GRedisClient = redisClient
+			ELog.Infof("Redis Host=%v, Port=%v, Password=%v Connect Success", s.srvCfg.RedisInfo.Host, s.srvCfg.RedisInfo.Port, s.srvCfg.RedisInfo.Password)
+		}
+	}
+	//Db
+	if s.srvCfg.DBInfo != nil && s.srvCfg.DBInfo.ConnMaxCount != 0 && s.srvCfg.DBInfo.TableMaxCount != 0 {
+		if err := edb.GDBModule.Init(s.srvCfg.DBInfo.ConnMaxCount, s.srvCfg.DBInfo.TableMaxCount, s.srvCfg.DBInfo.DBInfoList); err != nil {
+			ELog.Error(err)
+			return false
+		}
+	}
 
 	//Signal
 	GSignalDealer.Init(s)
 	ELog.Info("Server Signal System Init Success")
 
-	if s.GetLocalServerType() == 0 {
-		ELog.Error("Server ServerType = 0 Error")
-		return false
-	}
-
-	if GServerCfg.ServerId == 0 {
-		ELog.Error("Server ServerID = 0")
-		return false
-	}
-
 	//Uid
-	idMaker, idErr := NewIdMaker(int64(s.localServerId))
+	idMaker, idErr := NewIdMaker(int64(s.GetServerId()))
 	if idErr != nil {
 		ELog.Errorf("Server IdMaker Error=%v", idMaker)
 		return false
@@ -132,8 +158,49 @@ func (s *Server) Init() bool {
 		return false
 	}
 
+	//Tcp Listen
 	GServer = s
-	enet.GSSSessionMgr.Init(s.GetLocalIp())
+	enet.GSSSessionMgr.Init(s.GetIp())
+	if len(s.srvCfg.ServerInfo.Outer) != 0 {
+		if !enet.GSSSessionMgr.SSServerListen(s.srvCfg.ServerInfo.Outer) {
+			ELog.ErrorA("Server Listen Outer=%v", s.srvCfg.ServerInfo.Outer)
+			return false
+		}
+	} else if len(s.srvCfg.ServerInfo.Inter) != 0 {
+		if !enet.GSSSessionMgr.SSServerListen(s.srvCfg.ServerInfo.Inter) {
+			ELog.ErrorA("Server Listen Inter=%v", s.srvCfg.ServerInfo.Inter)
+			return false
+		}
+	}
+
+	if s.srvCfg.HttpInfo != nil {
+		if len(s.srvCfg.HttpInfo.Cert) != 0 && len(s.srvCfg.HttpInfo.Key) != 0 {
+			GSGLBClient.Init(s.srvCfg.HttpInfo.Url, true)
+		} else {
+			GSGLBClient.Init(s.srvCfg.HttpInfo.Url, false)
+		}
+
+		go func() {
+			serviceRegisterTimer := time.NewTicker(30 * time.Second)
+			defer serviceRegisterTimer.Stop()
+			for {
+				select {
+				case <-serviceRegisterTimer.C:
+					{
+						spec := &ServiceRegisterReq{}
+						spec.ServiceSpec = &ServiceSpec{}
+						spec.ServiceSpec.ServiceID = s.GetServerId()
+						spec.ServiceSpec.ServiceType = s.GetServerType()
+						spec.ServiceSpec.Token = s.GetToken()
+						spec.ServiceSpec.InterAddr = s.GetSrvCfg().ServerInfo.Inter
+						spec.ServiceSpec.OuterAddr = s.GetSrvCfg().ServerInfo.Outer
+						spec.ServiceSpec.State = s.GetState()
+						GSGLBClient.SendServiceRegisterReq(spec)
+					}
+				}
+			}
+		}()
+	}
 
 	return true
 }

@@ -37,15 +37,15 @@ func (s *Server) Init() bool {
 
 	ELog.Info("Server Log System Init Success")
 
-	if err := edb.GDatabaseCfgMgr.Load("./db_cfg.xml"); err != nil {
-		ELog.Error(err)
-		return false
-	}
+	// if err := edb.GDatabaseCfgMgr.Load("./db_cfg.xml"); err != nil {
+	// 	ELog.Error(err)
+	// 	return false
+	// }
 
-	if err := edb.GDBModule.Init(edb.GDatabaseCfgMgr.DBConnMaxCount, edb.GDatabaseCfgMgr.DBTableMaxCount, edb.GDatabaseCfgMgr.DBConnSpecs); err != nil {
-		ELog.Error(err)
-		return false
-	}
+	// if err := edb.GDBModule.Init(edb.GDatabaseCfgMgr.DBConnMaxCount, edb.GDatabaseCfgMgr.DBTableMaxCount, edb.GDatabaseCfgMgr.DBConnSpecs); err != nil {
+	// 	ELog.Error(err)
+	// 	return false
+	// }
 
 	ELog.Info("Server Init Success")
 
@@ -58,18 +58,18 @@ func (s *Server) Run() {
 	busy := false
 	timer_module := etimer.GTimerMgr
 	db_module := edb.GDBModule
-	meter := frame.NewTimeMeter(frame.METER_LOOP_COUNT)
+	meter := frame.NewTimeMeter(frame.MeterLoopCount)
 
 	for {
 		busy = false
 		meter.Clear()
 
-		if db_module.Run(frame.DB_LOOP_COUNT) {
+		if db_module.Run(frame.DBLoopCount) {
 			busy = true
 		}
 		meter.Stamp()
 
-		if timer_module.Update(frame.TIMER_LOOP_COUNT) {
+		if timer_module.Update(frame.TimerLoopCount) {
 			busy = true
 		}
 		meter.CheckOut()
@@ -103,7 +103,7 @@ func TestSync() {
 			paras := attach[0].(*CmdParas)
 			uid := util.Hash64(paras.UserName)
 			tableName := edb.GDBModule.GetTableNameByUID("account", uid)
-			accountId, _ := frame.GIdMaker.NextId()
+			accountId := frame.GIdMaker.NextId()
 			insert_sql := edb.BuildInsertSQL(tableName, map[string]interface{}{
 				"accountid": accountId,
 				"username":  paras.UserName,

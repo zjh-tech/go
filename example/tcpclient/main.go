@@ -41,11 +41,11 @@ func (t *TcpClient) Run() {
 	for {
 		busy = false
 
-		if net_module.Run(frame.NET_LOOP_COUNT) {
+		if net_module.Run(frame.NetLoopCount) {
 			busy = true
 		}
 
-		if timer_module.Update(frame.TIMER_LOOP_COUNT) {
+		if timer_module.Update(frame.TimerLoopCount) {
 			busy = true
 		}
 

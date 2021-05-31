@@ -41,10 +41,10 @@ func NewIdMaker(serverId int64) (*IdMaker, error) {
 	}, nil
 }
 
-func (m *IdMaker) nextId() (int64, error) {
+func (m *IdMaker) nextId() int64 {
 	now := time.Now().UnixNano() / 1e6
 	if now < m.lastTimestamp {
-		return 0, errors.New("Clock moved backwards")
+		panic("Clock moved backwards")
 	}
 	if m.lastTimestamp == now {
 		m.sequence = (m.sequence + 1) & sequenceMask
@@ -61,32 +61,23 @@ func (m *IdMaker) nextId() (int64, error) {
 	m.lastTimestamp = now
 	//1(不用) + 41(41位的时间截，可以使用69年) + 12(4095) + 10(1023) = 64位
 	ID := int64((now-epoch)<<timestampLeftShift | m.serverId<<serverIdShift | m.sequence)
-	return ID, nil
+	return ID
 }
 
-func (m *IdMaker) NextId() (int64, error) {
+func (m *IdMaker) NextId() int64 {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	id, err := m.nextId()
-	if err != nil {
-		return 0, err
-	}
-
-	return id, nil
+	return m.nextId()
 }
 
-func (m *IdMaker) NextIds(num int) ([]int64, error) {
+func (m *IdMaker) NextIds(num int) []int64 {
 	ids := make([]int64, num)
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	var err error
 	for i := 0; i < num; i++ {
-		ids[i], err = m.nextId()
-		if err != nil {
-			return nil, err
-		}
+		ids[i] = m.nextId()
 	}
-	return ids, nil
+	return ids
 }
 
 var GIdMaker *IdMaker

@@ -35,18 +35,18 @@ func (d *TcpServer) Run() {
 	busy := false
 	net_module := enet.GNet
 	timer_module := etimer.GTimerMgr
-	meter := frame.NewTimeMeter(frame.METER_LOOP_COUNT)
+	meter := frame.NewTimeMeter(frame.MeterLoopCount)
 
 	for {
 		busy = false
 		meter.Clear()
 
-		if net_module.Run(frame.NET_LOOP_COUNT) {
+		if net_module.Run(frame.NetLoopCount) {
 			busy = true
 		}
 		meter.Stamp()
 
-		if timer_module.Update(frame.TIMER_LOOP_COUNT) {
+		if timer_module.Update(frame.TimerLoopCount) {
 			busy = true
 		}
 		meter.CheckOut()

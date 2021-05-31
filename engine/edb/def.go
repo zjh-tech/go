@@ -3,11 +3,11 @@ package edb
 import "fmt"
 
 type DBConnSpec struct {
-	Ip       string
+	Name     string
+	Host     string
 	Port     uint32
 	User     string
 	Password string
-	Name     string
 	Charset  string
 }
 

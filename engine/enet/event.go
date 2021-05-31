@@ -48,15 +48,19 @@ func (t *TcpEvent) ProcessMsg() bool {
 //Http
 type HttpEvent struct {
 	httpConn IHttpConnection
-	msgId    uint32
+	router   string
 	datas    []byte
+	paras    interface{}
+	cbFunc   HttpCbFunc
 }
 
-func NewHttpEvent(httpConn IHttpConnection, msgId uint32, datas []byte) *HttpEvent {
+func NewHttpEvent(httpConn IHttpConnection, router string, cbFunc HttpCbFunc, datas []byte, paras interface{}) *HttpEvent {
 	return &HttpEvent{
 		httpConn: httpConn,
-		msgId:    msgId,
+		router:   router,
 		datas:    datas,
+		paras:    paras,
+		cbFunc:   cbFunc,
 	}
 }
 
@@ -66,6 +70,11 @@ func (h *HttpEvent) ProcessMsg() bool {
 		return false
 	}
 
-	h.httpConn.OnHandler(h.msgId, h.datas)
+	if h.cbFunc != nil {
+		h.cbFunc(h.datas, h.paras)
+	} else {
+		h.httpConn.OnHandler(h.router, h.datas, h.paras)
+	}
+
 	return true
 }

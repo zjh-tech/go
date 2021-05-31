@@ -17,17 +17,16 @@ type INet interface {
 }
 
 type ICoder interface {
+	//获取包头长度
 	GetHeaderLen() uint32
+	//获取包体长度
 	GetBodyLen(datas []byte) (uint32, error)
-
-	EnCodeBody(datas []byte) ([]byte, bool)
-	DecodeBody(datas []byte) ([]byte, error)
-
-	ZipBody(datas []byte) ([]byte, bool)
-	UnzipBody(datas []byte) ([]byte, error)
-
+	//获取包装后的数据
+	PackMsg(msgId uint32, datas []byte) ([]byte, error)
+	//获取原始的包体数据
+	UnpackMsg(datas []byte) ([]byte, error)
+	//处理消息
 	ProcessMsg(datas []byte, sess ISession)
-	FillNetStream(msgId uint32, datas []byte) ([]byte, error)
 }
 
 type ISessionOnHandler interface {
@@ -105,8 +104,9 @@ type ISessionFactory interface {
 }
 
 //Http
+type HttpCbFunc func(datas []byte, paras interface{})
 type IHttpConnection interface {
-	OnHandler(msgId uint32, datas []byte)
+	OnHandler(router string, datas []byte, paras interface{})
 }
 
 type IHttpEvent interface {

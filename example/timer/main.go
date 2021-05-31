@@ -48,6 +48,6 @@ func main() {
 	test.TestFunc()
 
 	for {
-		etimer.GTimerMgr.Update(frame.TIMER_LOOP_COUNT)
+		etimer.GTimerMgr.Update(frame.TimerLoopCount)
 	}
 }

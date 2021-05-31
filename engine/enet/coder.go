@@ -12,9 +12,7 @@ const (
 )
 
 type MsgHeader struct {
-	EncodeFlag bool
-	ZipFlag    bool
-	BodyLen    uint32
+	BodyLen uint32
 }
 
 type Coder struct {
@@ -35,12 +33,6 @@ func (c *Coder) GetBodyLen(datas []byte) (uint32, error) {
 	}
 
 	buff := bytes.NewBuffer(datas)
-	if err := binary.Read(buff, binary.BigEndian, &c.msgHeader.EncodeFlag); err != nil {
-		return 0, err
-	}
-	if err := binary.Read(buff, binary.BigEndian, &c.msgHeader.ZipFlag); err != nil {
-		return 0, err
-	}
 	if err := binary.Read(buff, binary.BigEndian, &c.msgHeader.BodyLen); err != nil {
 		return 0, err
 	}
@@ -48,28 +40,8 @@ func (c *Coder) GetBodyLen(datas []byte) (uint32, error) {
 	return c.msgHeader.BodyLen, nil
 }
 
-func (c *Coder) EnCodeBody(datas []byte) ([]byte, bool) {
-	return datas, false
-}
-
-func (c *Coder) DecodeBody(datas []byte) ([]byte, error) {
-	if !c.msgHeader.EncodeFlag {
-		return datas, nil
-	}
-
-	return nil, errors.New("DecodeBody Error")
-}
-
-func (c *Coder) ZipBody(datas []byte) ([]byte, bool) {
-	return datas, false
-}
-
-func (c *Coder) UnzipBody(datas []byte) ([]byte, error) {
-	if !c.msgHeader.EncodeFlag {
-		return datas, nil
-	}
-
-	return nil, errors.New("UnzipBody Error")
+func (c *Coder) UnpackMsg(datas []byte) ([]byte, error) {
+	return datas, nil
 }
 
 func (c *Coder) ProcessMsg(datas []byte, sess ISession) {
@@ -90,37 +62,27 @@ func (c *Coder) ProcessMsg(datas []byte, sess ISession) {
 	sess.GetSessionOnHandler().OnHandler(msgId, datas[msgStartIndex:])
 }
 
-func (c *Coder) FillNetStream(msgId uint32, datas []byte) ([]byte, error) {
+func (c *Coder) PackMsg(msgId uint32, datas []byte) ([]byte, error) {
 	bodyBuff := bytes.NewBuffer([]byte{})
 	if err := binary.Write(bodyBuff, binary.BigEndian, msgId); err != nil {
-		ELog.ErrorAf("FillNetStream MsgID Error=%v", err)
+		ELog.ErrorAf("PackMsg MsgID Error=%v", err)
 	}
 
 	if datas != nil {
 		if err := binary.Write(bodyBuff, binary.BigEndian, datas); err != nil {
-			ELog.ErrorAf("FillNetStream Datas Error=%v", err)
+			ELog.ErrorAf("PackMsg Datas Error=%v", err)
 		}
 	}
 
-	encodeDatas, encodeFlag := c.EnCodeBody(bodyBuff.Bytes())
-	zipDatas, zipFlag := c.ZipBody(encodeDatas)
-
+	bodyBytes := bodyBuff.Bytes()
 	header := &MsgHeader{}
-	header.EncodeFlag = encodeFlag
-	header.ZipFlag = zipFlag
-	header.BodyLen = uint32(len(zipDatas))
+	header.BodyLen = uint32(len(bodyBytes))
 
 	buff := bytes.NewBuffer([]byte{})
-	if err := binary.Write(buff, binary.BigEndian, header.EncodeFlag); err != nil {
-		return nil, err
-	}
-	if err := binary.Write(buff, binary.BigEndian, header.ZipFlag); err != nil {
-		return nil, err
-	}
 	if err := binary.Write(buff, binary.BigEndian, header.BodyLen); err != nil {
 		return nil, err
 	}
-	if err := binary.Write(buff, binary.BigEndian, zipDatas); err != nil {
+	if err := binary.Write(buff, binary.BigEndian, bodyBytes); err != nil {
 		return nil, err
 	}
 

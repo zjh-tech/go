@@ -75,40 +75,34 @@ func (c *Connection) StartReader() {
 
 		coder := c.session.GetCoder()
 
-		header_len := coder.GetHeaderLen()
-		head_bytes := make([]byte, header_len)
-		ELog.DebugAf("StartReader ConnID=%v HeaderLen=%v", c.connId, header_len)
-		if _, head_err := io.ReadFull(c.conn, head_bytes); head_err != nil {
+		headerLen := coder.GetHeaderLen()
+		headBytes := make([]byte, headerLen)
+		ELog.DebugAf("StartReader ConnID=%v HeaderLen=%v", c.connId, headerLen)
+		if _, head_err := io.ReadFull(c.conn, headBytes); head_err != nil {
 			ELog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit ReadFullError=%v", c.connId, head_err)
 			return
 		}
 
-		body_len, bodylen_err := coder.GetBodyLen(head_bytes)
-		if bodylen_err != nil {
-			ELog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit GetUnpackBodyLenError=%V", c.connId, bodylen_err)
+		bodyLen, bodyLenErr := coder.GetBodyLen(headBytes)
+		if bodyLenErr != nil {
+			ELog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit GetUnpackBodyLenError=%V", c.connId, bodyLenErr)
 			return
 		}
 
-		ELog.DebugAf("StartReader ConnID=%v BodyLen=%v", c.connId, body_len)
-		body_bytes := make([]byte, body_len)
-		if _, body_err := io.ReadFull(c.conn, body_bytes); body_err != nil {
-			ELog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit ReadBodyError=%v", c.connId, body_err)
+		ELog.DebugAf("StartReader ConnID=%v BodyLen=%v", c.connId, bodyLen)
+		bodyBytes := make([]byte, bodyLen)
+		if _, bodyErr := io.ReadFull(c.conn, bodyBytes); bodyErr != nil {
+			ELog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit ReadBodyError=%v", c.connId, bodyErr)
 			return
 		}
 
-		decode_datas, decode_err := coder.DecodeBody(body_bytes)
-		if decode_err != nil {
-			ELog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit DecodeBodyError=%v", c.connId, decode_err)
+		realBodyBytes, realBodyBytesErr := coder.UnpackMsg(bodyBytes)
+		if realBodyBytesErr != nil {
+			ELog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit DecodeBodyError=%v", c.connId, realBodyBytesErr)
 			return
 		}
 
-		unzip_datas, unzip_err := coder.UnzipBody(decode_datas)
-		if unzip_err != nil {
-			ELog.ErrorAf("[Net][Connection] ConnID=%v Read Goroutine Exit UnzipBodyError=%v", c.connId, unzip_err)
-			return
-		}
-
-		msg_event := NewTcpEvent(ConnRecvMsgType, c, unzip_datas)
+		msg_event := NewTcpEvent(ConnRecvMsgType, c, realBodyBytes)
 		c.net.PushEvent(msg_event)
 
 		//atomic.AddInt64(&GRecvQps, 1)
@@ -140,20 +134,20 @@ func (c *Connection) close(terminate bool) {
 		ELog.InfoAf("[Net][Connection] ConnID=%v Active Closed", c.connId)
 		go func() {
 			//等待发完所有消息或者超时后,关闭底层read,write
-			close_timer := time.NewTicker(100 * time.Millisecond)
-			defer close_timer.Stop()
+			closeTimer := time.NewTicker(100 * time.Millisecond)
+			defer closeTimer.Stop()
 
-			close_timeout_timer := time.NewTimer(60 * time.Second)
-			defer close_timeout_timer.Stop()
+			closeTimeoutTimer := time.NewTimer(60 * time.Second)
+			defer closeTimeoutTimer.Stop()
 			for {
 				select {
-				case <-close_timer.C:
+				case <-closeTimer.C:
 					{
 						if len(c.msgChan) <= 0 && len(c.msgBuffChan) <= 0 {
 							c.on_close()
 						}
 					}
-				case <-close_timeout_timer.C:
+				case <-closeTimeoutTimer.C:
 					{
 						c.on_close()
 						return

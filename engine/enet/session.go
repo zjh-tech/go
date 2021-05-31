@@ -90,9 +90,9 @@ func (s *Session) AsyncSendMsg(msgId uint32, datas []byte) bool {
 		return false
 	}
 
-	allDatas, err := s.coder.FillNetStream(msgId, datas)
+	allDatas, err := s.coder.PackMsg(msgId, datas)
 	if err != nil {
-		ELog.ErrorAf("[Session] SesssionID=%v  SendMsg FillNetStream Error=%v", s.GetSessID(), err)
+		ELog.ErrorAf("[Session] SesssionID=%v  SendMsg PackMsg Error=%v", s.GetSessID(), err)
 	}
 
 	s.conn.AsyncSend(allDatas)

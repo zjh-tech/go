@@ -37,14 +37,14 @@ func (d *DBModule) Init(connMaxCount uint64, dbTableMaxCount uint64, connSpecs [
 
 		dbIndex, _ := convert.Str2Uint64(dbNameSlices[1])
 		connErr := d.connect(dbIndex,
-			d.connSpecs[i].Name, d.connSpecs[i].Ip,
+			d.connSpecs[i].Name, d.connSpecs[i].Host,
 			d.connSpecs[i].Port, d.connSpecs[i].User,
 			d.connSpecs[i].Password, d.connSpecs[i].Charset)
 
 		if connErr != nil {
-			ELog.Errorf("[DBModule] Connect Mysql DBName=%v DBIp=%v,DBPort=%v, Error = %v",
+			ELog.Errorf("[DBModule] Connect Mysql DBName=%v DBHost=%v,DBPort=%v, Error = %v",
 				d.connSpecs[i].Name,
-				d.connSpecs[i].Ip,
+				d.connSpecs[i].Host,
 				d.connSpecs[i].Port,
 				connErr)
 			return connErr
@@ -58,20 +58,20 @@ func (d *DBModule) UnInit() {
 	ELog.InfoA("[DB] Stop")
 }
 
-func (d *DBModule) connect(dbIndex uint64, db_name string, ip string, port uint32, user string, password string, charset string) error {
+func (d *DBModule) connect(dbIndex uint64, dbName string, host string, port uint32, user string, password string, charset string) error {
 	if _, ok := d.conns[dbIndex]; ok {
-		errStr := fmt.Sprintln("[Mysql] DBIndex =%v DBName=%v Ip=%s Port=%v Exist", dbIndex, db_name, ip, port)
+		errStr := fmt.Sprintln("[Mysql] DBIndex =%v DBName=%v Host=%s Port=%v Exist", dbIndex, dbName, host, port)
 		return errors.New(errStr)
 	}
 
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=%s", user, password, "tcp", ip, port, db_name, charset)
-	name := db_name
+	dsn := fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=%s", user, password, "tcp", host, port, dbName, charset)
+	name := dbName
 	mysqlConn := newMysqlConn(name)
 	if err := mysqlConn.connect(dsn); err != nil {
 		return err
 	}
 
-	ELog.Infof("[Mysql] DbIndex=%v DBName=%v Connect Ip=%v Port=%v  Success", dbIndex, db_name, ip, port)
+	ELog.Infof("[Mysql] DbIndex=%v DBName=%v Connect Host=%v Port=%v  Success", dbIndex, dbName, host, port)
 	d.conns[dbIndex] = mysqlConn
 	return nil
 }
