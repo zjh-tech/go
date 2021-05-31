@@ -14,10 +14,10 @@ type ClientMsgHandler struct {
 }
 
 func (c *ClientMsgHandler) Init() bool {
-	c.timerRegister = etimer.NewTimerRegister()
+	c.timerRegister = etimer.NewTimerRegister(etimer.GTimerMgr)
 	c.dealer.RegisterHandler(uint32(10), GameClientFunc(OnHandlerCsTestReq))
 
-	c.timerRegister.AddRepeatTimer(uint32(1), 1000, "", func(v ...interface{}) {
+	c.timerRegister.AddRepeatTimer(uint32(1), 1000, func(v ...interface{}) {
 		ELog.InfoAf("Qps=%v", c.Qps)
 		c.Qps = 0
 	}, []interface{}{}, true)

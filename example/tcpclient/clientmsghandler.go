@@ -13,7 +13,7 @@ type ClientMsgHandler struct {
 }
 
 func (c *ClientMsgHandler) Init() bool {
-	c.timerRegister = etimer.NewTimerRegister()
+	c.timerRegister = etimer.NewTimerRegister(etimer.GTimerMgr)
 	c.dealer.RegisterHandler(uint32(10), ClientFunc(OnHandlerCsTestReq))
 	return true
 }

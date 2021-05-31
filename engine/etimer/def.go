@@ -1,6 +1,9 @@
 package etimer
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type TimerState int32
 
@@ -13,6 +16,10 @@ const (
 const MaxSlotSize uint64 = 60000
 const SlotInterValTime uint64 = 1
 const NovalidDelayMill uint64 = 0xFFFFFFFFFFFFFFFF
+
+func getMillSecond() int64 {
+	return time.Now().UnixNano() / 1e6
+}
 
 const TimerMajorVersion = 1
 const TimerMinorVersion = 1

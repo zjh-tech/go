@@ -19,7 +19,7 @@ type Test struct {
 
 func NewTest() *Test {
 	t := &Test{
-		timeRegister: etimer.NewTimerRegister(),
+		timeRegister: etimer.NewTimerRegister(etimer.GTimerMgr),
 	}
 	return t
 }
@@ -28,13 +28,13 @@ func (t *Test) TestFunc() {
 	a := 1
 	b := 2
 
-	t.timeRegister.AddOnceTimer(uint32(TEST1_TIMER_ID), 1000*60, "Test1", func(v ...interface{}) {
+	t.timeRegister.AddOnceTimer(uint32(TEST1_TIMER_ID), 1000*60, func(v ...interface{}) {
 		tempA := v[0].(int)
 		tempB := v[1].(int)
 		ELog.InfoAf("TEST1 Exec a=%v  b=%v", tempA, tempB)
 	}, []interface{}{a, b}, true)
 
-	t.timeRegister.AddRepeatTimer(uint32(TEST2_TIMER_ID), 1000*30, "Test2", func(v ...interface{}) {
+	t.timeRegister.AddRepeatTimer(uint32(TEST2_TIMER_ID), 1000*30, func(v ...interface{}) {
 		ELog.InfoAf("TestID2 Exec")
 	}, []interface{}{}, true)
 }

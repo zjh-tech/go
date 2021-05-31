@@ -6,28 +6,28 @@ import (
 
 type TimerRegister struct {
 	registerMap map[uint32]*Timer
-	registerId  uint64
+	mgr         ITimerMgr
 }
 
 func CleanTimer(t *TimerRegister) {
 	t.KillAllTimer()
 }
 
-func NewTimerRegister() *TimerRegister {
+func NewTimerRegister(mgr ITimerMgr) *TimerRegister {
 	tr := &TimerRegister{
 		registerMap: make(map[uint32]*Timer),
-		registerId:  0,
+		mgr:         mgr,
 	}
 	runtime.SetFinalizer(tr, CleanTimer)
 	return tr
 }
 
-func (t *TimerRegister) AddOnceTimer(id uint32, delay uint64, desc string, cb FuncType, args ArgType, replace bool) {
-	t.addTimer(id, delay, desc, false, replace, cb, args)
+func (t *TimerRegister) AddOnceTimer(id uint32, delay uint64, cb FuncType, args ArgType, replace bool) {
+	t.addTimer(id, delay, false, replace, cb, args)
 }
 
-func (t *TimerRegister) AddRepeatTimer(id uint32, delay uint64, desc string, cb FuncType, args ArgType, replace bool) {
-	t.addTimer(id, delay, desc, true, replace, cb, args)
+func (t *TimerRegister) AddRepeatTimer(id uint32, delay uint64, cb FuncType, args ArgType, replace bool) {
+	t.addTimer(id, delay, true, replace, cb, args)
 }
 
 func (t *TimerRegister) HasTimer(id uint32) bool {
@@ -60,15 +60,15 @@ func (t *TimerRegister) KillAllTimer() {
 }
 
 func (t *TimerRegister) RemoveTimer(info *Timer) {
-	timer, ok := t.registerMap[info.registerEid]
+	timer, ok := t.registerMap[info.eid]
 	if ok {
-		if timer.uid == info.uid && timer.registerUid == info.registerUid {
-			delete(t.registerMap, timer.registerEid)
+		if timer.uid == info.uid {
+			delete(t.registerMap, timer.eid)
 		}
 	}
 }
 
-func (t *TimerRegister) addTimer(id uint32, delay uint64, desc string, repeat bool, replace bool, cb FuncType, args ArgType) bool {
+func (t *TimerRegister) addTimer(id uint32, delay uint64, repeat bool, replace bool, cb FuncType, args ArgType) bool {
 	if delay == NovalidDelayMill {
 		return false
 	}
@@ -82,8 +82,7 @@ func (t *TimerRegister) addTimer(id uint32, delay uint64, desc string, repeat bo
 		t.KillTimer(id)
 	}
 
-	t.registerId++
-	timer := GTimerMgr.CreateSlotTimer(id, t.registerId, delay, desc, repeat, cb, args, t)
+	timer := t.mgr.CreateSlotTimer(id, delay, repeat, cb, args, t)
 	if timer == nil {
 		ELog.ErrorAf("[Timer] CreateSlotTimer Erorr id = %v,delay = %v", id, delay)
 		return false
@@ -96,6 +95,6 @@ func (t *TimerRegister) addTimer(id uint32, delay uint64, desc string, repeat bo
 	}
 
 	t.registerMap[id] = timer
-	GTimerMgr.AddSlotTimer(timer)
+	t.mgr.AddSlotTimer(timer)
 	return true
 }

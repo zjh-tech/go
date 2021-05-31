@@ -2,12 +2,7 @@ package etimer
 
 import (
 	"container/list"
-	"time"
 )
-
-func getMillSecond() int64 {
-	return time.Now().UnixNano() / 1e6
-}
 
 type TimerMgr struct {
 	uid      uint64
@@ -16,7 +11,7 @@ type TimerMgr struct {
 	lastTick int64
 }
 
-func newTimerMgr() *TimerMgr {
+func NewTimerMgr() *TimerMgr {
 	mgr := &TimerMgr{
 		curSlot: 0,
 		uid:     0,
@@ -65,7 +60,7 @@ func (t *TimerMgr) Update(loopCount int) bool {
 			timer.rotation--
 			if timer.rotation < 0 {
 				busy = true
-				ELog.DebugAf("[Timer] Trigger %v id %v-%v-%v", timer.desc, timer.uid, timer.registerEid, timer.registerUid)
+				ELog.DebugAf("[Timer] Trigger  id %v-%v", timer.uid, timer.eid)
 				slotList.Remove(e)
 				timer.Call()
 				if timer.repeat && timer.state == TimerRunningState {
@@ -74,7 +69,7 @@ func (t *TimerMgr) Update(loopCount int) bool {
 					t.ReleaseTimer(timer)
 				}
 			} else {
-				ELog.DebugAf("[Timer] %v id %v-%v-%v remain rotation = %v %v", timer.desc, timer.uid, timer.registerEid, timer.registerUid, timer.rotation+1, MaxSlotSize)
+				ELog.DebugAf("[Timer]  id %v-%v-%v remain rotation = %v %v", timer.uid, timer.eid, timer.rotation+1, MaxSlotSize)
 			}
 
 			e = next
@@ -95,9 +90,9 @@ func (t *TimerMgr) UnInit() {
 	ELog.Info("[Timer] Stop")
 }
 
-func (t *TimerMgr) CreateSlotTimer(registerEid uint32, registerUid uint64, delay uint64, desc string, repeat bool, cb FuncType, args ArgType, r *TimerRegister) *Timer {
+func (t *TimerMgr) CreateSlotTimer(eid uint32, delay uint64, repeat bool, cb FuncType, args ArgType, r *TimerRegister) *Timer {
 	t.uid++
-	timer := new_timer(registerEid, registerUid, t.uid, delay, desc, repeat, cb, args, r)
+	timer := newTimer(eid, t.uid, delay, repeat, cb, args, r)
 	return timer
 }
 
@@ -114,17 +109,17 @@ func (t *TimerMgr) AddSlotTimer(timer *Timer) {
 		timer.rotation--
 	}
 	t.slotList[timer.slot].PushBack(timer)
-	ELog.DebugAf("[Timer] AddSlotTimer %v id %v-%v-%v delay=%v,curslot=%v,slot=%v,rotation=%v", timer.desc, timer.uid, timer.registerEid, timer.registerUid, timer.delay, t.curSlot, timer.slot, tempRotation)
+	ELog.DebugAf("[Timer] AddSlotTimer  id %v-%v-%v delay=%v,curslot=%v,slot=%v,rotation=%v", timer.uid, timer.eid, timer.delay, t.curSlot, timer.slot, tempRotation)
 }
 
 func (t *TimerMgr) ReleaseTimer(timer *Timer) {
 	if timer != nil {
 		if timer.state == TimerRunningState {
-			ELog.DebugAf("[Timer] ReleaseTimer %v id %v-%v-%v Running State", timer.desc, timer.uid, timer.registerEid, timer.registerUid)
+			ELog.DebugAf("[Timer] ReleaseTimer  id %v-%v Running State", timer.uid, timer.eid)
 		} else if timer.state == TimerKilledState {
-			ELog.DebugAf("[Timer] ReleaseTimer %v id %v-%v-%v Killed State", timer.desc, timer.uid, timer.registerEid, timer.registerUid)
+			ELog.DebugAf("[Timer] ReleaseTimer id %v-%v Killed State", timer.uid, timer.eid)
 		} else {
-			ELog.DebugAf("[Timer] ReleaseTimer %v id %v-%v-%v Unknow State", timer.desc, timer.uid, timer.registerEid, timer.registerUid)
+			ELog.DebugAf("[Timer] ReleaseTimer id %v-%v Unknow State", timer.uid, timer.eid)
 		}
 
 		timer.cb = nil
@@ -144,5 +139,5 @@ func (t *TimerMgr) GetCurSlot() uint64 {
 var GTimerMgr *TimerMgr
 
 func init() {
-	GTimerMgr = newTimerMgr()
+	GTimerMgr = NewTimerMgr()
 }

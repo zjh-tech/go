@@ -5,39 +5,35 @@ import (
 )
 
 type Timer struct {
-	uid         uint64
-	registerEid uint32
-	registerUid uint64
-	delay       uint64
-	desc        string
-	repeat      bool
-	rotation    int64
-	slot        uint64
-	cb          FuncType
-	args        ArgType
-	state       TimerState
-	register    *TimerRegister
+	uid      uint64
+	eid      uint32
+	delay    uint64
+	repeat   bool
+	rotation int64
+	slot     uint64
+	cb       FuncType
+	args     ArgType
+	state    TimerState
+	register *TimerRegister
 }
 
-func new_timer(registerEid uint32, registerUid uint64, uid uint64, delay uint64, desc string, repeat bool, cb FuncType, args ArgType, register *TimerRegister) *Timer {
+func newTimer(eid uint32, uid uint64, delay uint64, repeat bool, cb FuncType, args ArgType, register *TimerRegister) *Timer {
 	timer := &Timer{
-		registerEid: registerEid,
-		registerUid: registerUid,
-		uid:         uid,
-		delay:       delay,
-		desc:        desc,
-		repeat:      repeat,
-		cb:          cb,
-		args:        args,
-		state:       TimerInvalidState,
-		register:    register,
+		eid:      eid,
+		uid:      uid,
+		delay:    delay,
+		repeat:   repeat,
+		cb:       cb,
+		args:     args,
+		state:    TimerInvalidState,
+		register: register,
 	}
 	return timer
 }
 
 func (t *Timer) Kill() {
 	t.state = TimerKilledState
-	ELog.DebugAf("[Timer] desc=%v id %v-%v-%v Kill State", t.desc, t.registerUid, t.uid, t.registerEid)
+	ELog.DebugAf("[Timer] id %v-%v Kill State", t.uid, t.eid)
 }
 
 func (t *Timer) Call() {
