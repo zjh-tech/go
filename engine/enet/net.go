@@ -136,6 +136,8 @@ func (n *Net) Connect(addr string, sess ISession) {
 }
 
 func (n *Net) Run(loopCount int) bool {
+	n.Update()
+
 	i := 0
 	for ; i < loopCount; i++ {
 		select {
@@ -158,6 +160,20 @@ func (n *Net) Run(loopCount int) bool {
 	}
 	ELog.ErrorA("[Net] Run Error")
 	return false
+}
+
+func (n *Net) Update() {
+	if GSSSessionMgr != nil {
+		GSSSessionMgr.Update()
+	}
+
+	if GCSSessionMgr != nil {
+		GCSSessionMgr.Update()
+	}
+
+	if GSDKSessionMgr != nil {
+		GSDKSessionMgr.Update()
+	}
 }
 
 var GNet *Net

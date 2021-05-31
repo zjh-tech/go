@@ -1,6 +1,9 @@
 package enet
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	ConnEstablishType uint32 = iota
@@ -27,6 +30,10 @@ const (
 	MsgSuccess uint32 = 0
 	MsgFail    uint32 = 1
 )
+
+func getMillsecond() int64 {
+	return time.Now().UnixNano() / 1e6
+}
 
 const NetMajorVersion = 1
 const NetMinorVersion = 1

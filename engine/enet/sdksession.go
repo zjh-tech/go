@@ -4,8 +4,6 @@ import (
 	"math"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/zjh-tech/go-frame/base/util"
-	"github.com/zjh-tech/go-frame/engine/etimer"
 )
 
 type ISdkMsgHandler interface {
@@ -18,31 +16,22 @@ type ISdkMsgHandler interface {
 
 type SDKSession struct {
 	Session
-	handler           ISdkMsgHandler
-	timerRegister     etimer.ITimerRegister
-	lastBeatHeartTime int64
-	remote_outer      string
+	handler                ISdkMsgHandler
+	lastSendBeatHeartTime  int64
+	lastCheckBeatHeartTime int64
+	remote_outer           string
 }
 
 const (
-	SdkCheckBeatHeartTimerId uint32 = 1
-	SdkSendBeatHeartTimeId   uint32 = 2
-)
-
-const (
-	SdkHeartTimeDelay     uint64 = 1000 * 1
-	SdkSendBeatHeartDelay uint64 = 1000 * 20
-)
-
-const (
-	SdkBeatHeartMaxTime int64 = 1000 * 60 * 5
+	SdkBeatHeartMaxTime  int64 = 1000 * 60 * 2
+	SdkSendBeatHeartTime int64 = 1000 * 20
+	SdkMgrUpdateTime     int64 = 1000 * 1
 )
 
 func NewSDKSession(handler ISdkMsgHandler) *SDKSession {
 	sess := &SDKSession{
-		handler:           handler,
-		lastBeatHeartTime: util.GetMillsecond(),
-		timerRegister:     etimer.NewTimerRegister(),
+		handler:                handler,
+		lastCheckBeatHeartTime: getMillsecond(),
 	}
 	sess.SetListenType()
 	sess.Session.ISessionOnHandler = sess
@@ -57,29 +46,28 @@ func (s *SDKSession) OnEstablish() {
 	ELog.InfoAf("SDKSession %v Establish", s.GetSessID())
 	s.factory.AddSession(s)
 	s.handler.OnConnect(s)
+}
 
-	s.timerRegister.AddRepeatTimer(SdkCheckBeatHeartTimerId, SdkHeartTimeDelay, "SDKSession-BeatHeartCheck", func(v ...interface{}) {
-		now := util.GetMillsecond()
-		if (s.lastBeatHeartTime + SdkBeatHeartMaxTime) < now {
-			ELog.ErrorAf("[SDKSession] SessID=%v BeatHeart Check Exception", s.GetSessID())
-			s.handler.OnBeatHeartError(s)
-			s.Terminate()
-		} else {
-			ELog.DebugAf("[SDKSession] SessID=%v BeatHeart Success", s.GetSessID())
-		}
-	}, []interface{}{}, true)
+func (s *SDKSession) Update() {
+	now := getMillsecond()
+	if (s.lastCheckBeatHeartTime + SdkBeatHeartMaxTime) < now {
+		ELog.ErrorAf("[SDKSession] SessID=%v BeatHeart Check Exception", s.GetSessID())
+		s.handler.OnBeatHeartError(s)
+		s.Terminate()
+		return
+	}
 
 	if s.IsConnectType() {
-		s.timerRegister.AddRepeatTimer(SdkSendBeatHeartTimeId, SdkSendBeatHeartDelay, "SDKSession-SendBeatHeart", func(v ...interface{}) {
+		if (s.lastSendBeatHeartTime + SdkSendBeatHeartTime) >= now {
+			s.lastSendBeatHeartTime = now
 			ELog.DebugAf("[SDKSession] SessID=%v Send Beat Heart", s.GetSessID())
 			s.AsyncSendMsg(SDKSessionPingId, nil)
-		}, []interface{}{}, true)
+		}
 	}
 }
 
 func (s *SDKSession) OnTerminate() {
 	ELog.InfoAf("SDKSession %v Terminate", s.GetSessID())
-	s.timerRegister.KillAllTimer()
 	factory := s.GetSessionFactory()
 	ssclientfactory := factory.(*SDKSessionMgr)
 	ssclientfactory.RemoveSession(s.GetSessID())
@@ -89,17 +77,17 @@ func (s *SDKSession) OnTerminate() {
 func (s *SDKSession) OnHandler(msgId uint32, datas []byte) {
 	if msgId == SDKSessionPingId {
 		ELog.DebugAf("[SDKSession] SessionID=%v RECV Ping ", s.GetSessID())
-		s.lastBeatHeartTime = util.GetMillsecond()
+		s.lastCheckBeatHeartTime = getMillsecond()
 		s.AsyncSendMsg(SDKSessionPongId, nil)
 		return
 	} else if msgId == SDKSessionPongId {
 		ELog.DebugAf("[SDKSession] SessionID=%v RECV Pong", s.GetSessID())
-		s.lastBeatHeartTime = util.GetMillsecond()
+		s.lastCheckBeatHeartTime = getMillsecond()
 		return
 	}
 
 	s.handler.OnHandler(msgId, datas, s)
-	s.lastBeatHeartTime = util.GetMillsecond()
+	s.lastCheckBeatHeartTime = getMillsecond()
 }
 
 type SCClientSessionCache struct {
@@ -108,42 +96,47 @@ type SCClientSessionCache struct {
 	connectTick int64
 }
 
-const (
-	SDK_MGR_CACHE_TIMER_ID uint32 = 1
-)
-
-const (
-	SDK_MGR_CACHE_TIMER_DELAY uint64 = 1000 * 1
-)
-
 type SDKSessionMgr struct {
-	nextId        uint64
-	sessMap       map[uint64]ISession
-	handler       ISdkMsgHandler
-	coder         ICoder
-	cacheMap      map[uint64]*SCClientSessionCache
-	timerRegister etimer.ITimerRegister
+	nextId         uint64
+	sessMap        map[uint64]ISession
+	handler        ISdkMsgHandler
+	coder          ICoder
+	cacheMap       map[uint64]*SCClientSessionCache
+	lastUpdateTime int64
 }
 
 func NewSDKSessionMgr() *SDKSessionMgr {
 	return &SDKSessionMgr{
-		nextId:        1,
-		sessMap:       make(map[uint64]ISession),
-		timerRegister: etimer.NewTimerRegister(),
-		cacheMap:      make(map[uint64]*SCClientSessionCache),
+		nextId:         1,
+		sessMap:        make(map[uint64]ISession),
+		cacheMap:       make(map[uint64]*SCClientSessionCache),
+		lastUpdateTime: getMillsecond(),
 	}
 }
 
 func (s *SDKSessionMgr) Init() {
-	s.timerRegister.AddRepeatTimer(SDK_MGR_CACHE_TIMER_ID, SDK_MGR_CACHE_TIMER_DELAY, "SDKSessionMgr-Cache", func(v ...interface{}) {
-		now := util.GetMillsecond()
+
+}
+
+func (s *SDKSessionMgr) Update() {
+	now := getMillsecond()
+	if (s.lastUpdateTime + SdkMgrUpdateTime) >= now {
+		s.lastUpdateTime = now
+
 		for sessionID, cache := range s.cacheMap {
 			if cache.connectTick < now {
 				ELog.InfoAf("[SDKSessionMgr] Timeout Triggle  ConnectCache Del SesssionID=%v,Addr=%v", cache.sessionId, cache.addr)
 				delete(s.cacheMap, sessionID)
 			}
 		}
-	}, []interface{}{}, true)
+	}
+
+	for _, session := range s.sessMap {
+		sess := session.(*SDKSession)
+		if sess != nil {
+			sess.Update()
+		}
+	}
 }
 
 func (s *SDKSessionMgr) IsInConnectCache(sessionId uint64) bool {
@@ -221,7 +214,7 @@ func (s *SDKSessionMgr) SdkConnect(addr string, handler ISdkMsgHandler, coder IC
 	cache := &SCClientSessionCache{
 		sessionId:   sess.GetSessID(),
 		addr:        addr,
-		connectTick: util.GetMillsecond() + SSOnceConnectMaxTime,
+		connectTick: getMillsecond() + SSOnceConnectMaxTime,
 	}
 	s.cacheMap[sess.GetSessID()] = cache
 	ELog.InfoAf("[SDKSessionMgr]ConnectCache Add SessionID=%v,Addr=%v", sess.GetSessID(), addr)
@@ -241,7 +234,3 @@ func (s *SDKSessionMgr) SdkListen(addr string, handler ISdkMsgHandler, coder ICo
 }
 
 var GSDKSessionMgr *SDKSessionMgr
-
-func init() {
-	GSDKSessionMgr = NewSDKSessionMgr()
-}

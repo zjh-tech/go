@@ -91,8 +91,9 @@ type ISession interface {
 
 	AsyncSendProtoMsg(msgId uint32, msg proto.Message) bool
 
-	//主动断开
 	Terminate()
+
+	Update()
 }
 
 //ISessionFactory
@@ -101,6 +102,7 @@ type ISessionFactory interface {
 	AddSession(session ISession)
 	RemoveSession(id uint64)
 	GetSessionCount() int
+	Update()
 }
 
 //Http
