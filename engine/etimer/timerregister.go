@@ -23,11 +23,11 @@ func NewTimerRegister(mgr ITimerMgr) *TimerRegister {
 }
 
 func (t *TimerRegister) AddOnceTimer(id uint32, delay uint64, cb FuncType, args ArgType, replace bool) {
-	t.addTimer(id, delay, false, replace, cb, args)
+	t.addTimer(id, delay, false, cb, args)
 }
 
 func (t *TimerRegister) AddRepeatTimer(id uint32, delay uint64, cb FuncType, args ArgType, replace bool) {
-	t.addTimer(id, delay, true, replace, cb, args)
+	t.addTimer(id, delay, true, cb, args)
 }
 
 func (t *TimerRegister) HasTimer(id uint32) bool {
@@ -68,18 +68,14 @@ func (t *TimerRegister) RemoveTimer(info *Timer) {
 	}
 }
 
-func (t *TimerRegister) addTimer(id uint32, delay uint64, repeat bool, replace bool, cb FuncType, args ArgType) bool {
+func (t *TimerRegister) addTimer(id uint32, delay uint64, repeat bool, cb FuncType, args ArgType) bool {
 	if delay == NovalidDelayMill {
 		return false
 	}
 
 	exist := t.HasTimer(id)
-	if exist && !replace {
+	if exist {
 		return true
-	}
-
-	if exist && replace {
-		t.KillTimer(id)
 	}
 
 	timer := t.mgr.CreateSlotTimer(id, delay, repeat, cb, args, t)
