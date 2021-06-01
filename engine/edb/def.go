@@ -1,6 +1,18 @@
 package edb
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
+
+func Str2Uint64(str string) (uint64, bool) {
+	n, err := strconv.ParseUint(str, 10, 64)
+	if err == nil {
+		return n, true
+	}
+
+	return 0, false
+}
 
 type DBConnSpec struct {
 	Name     string

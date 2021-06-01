@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/zjh-tech/go-frame/base/convert"
 )
 
 type DBModule struct {
@@ -35,18 +33,8 @@ func (d *DBModule) Init(connMaxCount uint64, dbTableMaxCount uint64, connSpecs [
 			return errors.New("[DBModule] Mysql Index Error")
 		}
 
-		dbIndex, _ := convert.Str2Uint64(dbNameSlices[1])
-		connErr := d.connect(dbIndex,
-			d.connSpecs[i].Name, d.connSpecs[i].Host,
-			d.connSpecs[i].Port, d.connSpecs[i].User,
-			d.connSpecs[i].Password, d.connSpecs[i].Charset)
-
-		if connErr != nil {
-			ELog.Errorf("[DBModule] Connect Mysql DBName=%v DBHost=%v,DBPort=%v, Error = %v",
-				d.connSpecs[i].Name,
-				d.connSpecs[i].Host,
-				d.connSpecs[i].Port,
-				connErr)
+		dbIndex, _ := Str2Uint64(dbNameSlices[1])
+		if connErr := d.connect(dbIndex, d.connSpecs[i].Name, d.connSpecs[i].Host, d.connSpecs[i].Port, d.connSpecs[i].User, d.connSpecs[i].Password, d.connSpecs[i].Charset); connErr != nil {
 			return connErr
 		}
 	}
@@ -60,7 +48,7 @@ func (d *DBModule) UnInit() {
 
 func (d *DBModule) connect(dbIndex uint64, dbName string, host string, port uint32, user string, password string, charset string) error {
 	if _, ok := d.conns[dbIndex]; ok {
-		errStr := fmt.Sprintln("[Mysql] DBIndex =%v DBName=%v Host=%s Port=%v Exist", dbIndex, dbName, host, port)
+		errStr := fmt.Sprintf("[Mysql] DBIndex =%v DBName=%v Host=%s Port=%v Exist", dbIndex, dbName, host, port)
 		return errors.New(errStr)
 	}
 
