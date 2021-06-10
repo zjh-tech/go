@@ -28,7 +28,7 @@ func (s *Server) Init() bool {
 	ELog.SetLogger(logger)
 
 	//Uid
-	idMaker, idErr := frame.NewIdMaker(int64(1))
+	idMaker, idErr := frame.NewIdMaker(int64(1), true)
 	if idErr != nil {
 		ELog.Errorf("Server IdMaker Error=%v", idMaker)
 		return false

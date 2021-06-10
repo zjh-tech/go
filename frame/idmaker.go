@@ -24,13 +24,14 @@ const (
 
 type IdMaker struct {
 	mutex         sync.Mutex // 添加互斥锁 确保并发安全
-	lastTimestamp int64      // 上次生成ID的时间截
+	safeFlag      bool
+	lastTimestamp int64 // 上次生成ID的时间截
 	serverId      int64
 	sequence      int64 // 毫秒内序列(0~4095)
 }
 
 //(0-4095)
-func NewIdMaker(serverId int64) (*IdMaker, error) {
+func NewIdMaker(serverId int64, safeFlag bool) (*IdMaker, error) {
 	if serverId < 0 || serverId > maxServerId {
 		return nil, errors.New("Server ID excess of quantity")
 	}
@@ -38,6 +39,7 @@ func NewIdMaker(serverId int64) (*IdMaker, error) {
 		lastTimestamp: 0,
 		serverId:      serverId,
 		sequence:      0,
+		safeFlag:      safeFlag,
 	}, nil
 }
 
@@ -65,15 +67,30 @@ func (m *IdMaker) nextId() int64 {
 }
 
 func (m *IdMaker) NextId() int64 {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	if m.safeFlag {
+		m.mutex.Lock()
+	}
+
+	defer func() {
+		if m.safeFlag {
+			m.mutex.Unlock()
+		}
+	}()
+
 	return m.nextId()
 }
 
 func (m *IdMaker) NextIds(num int) []int64 {
 	ids := make([]int64, num)
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	if m.safeFlag {
+		m.mutex.Lock()
+	}
+
+	defer func() {
+		if m.safeFlag {
+			m.mutex.Unlock()
+		}
+	}()
 	for i := 0; i < num; i++ {
 		ids[i] = m.nextId()
 	}

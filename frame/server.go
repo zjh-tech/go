@@ -139,7 +139,7 @@ func (s *Server) Init() bool {
 	ELog.Info("Server Signal System Init Success")
 
 	//Uid
-	idMaker, idErr := NewIdMaker(int64(s.GetServerId()))
+	idMaker, idErr := NewIdMaker(int64(s.GetServerId()), true)
 	if idErr != nil {
 		ELog.Errorf("Server IdMaker Error=%v", idMaker)
 		return false

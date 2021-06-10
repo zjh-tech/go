@@ -1,21 +1,53 @@
 package edb
 
-//同步
-func SyncDoSqlOpt(execSql ExecSqlFunc, execRec ExecSqlRecordFunc, attach []interface{}, uid uint64) {
-	command := NewCommonCommand(execSql, execRec, attach)
-	if command == nil {
-		ELog.ErrorAf("Mysql AsyncDoSqlOpt NewCommonCommand Error Uid=%v", uid)
-		return
-	}
+import (
+	"errors"
+	"fmt"
+)
 
+//同步
+func SyncQuerySqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
+	command := NewSyncCommonCommand(sql, true)
+	if command == nil {
+		return nil, errors.New("NewSyncCommonCommand Error")
+	}
 	conn := GDBModule.GetMysqlConn(uid)
 	if conn == nil {
-		ELog.ErrorAf("Mysql AsyncDoSqlOpt GetMysqlConn Error Uid=%v", uid)
-		return
+		return nil, errors.New(fmt.Sprintf("Mysql SyncQuerySql GetMysqlConn Error Uid=%v", uid))
 	}
 
 	command.OnExecuteSql(conn)
-	command.OnExecuted()
+	return command.GetExecuteSqlResult()
+}
+
+func SyncInsertSqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
+	return SyncNonQuerySqlOpt(sql, uid)
+}
+
+func SyncUpdateSqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
+	return SyncNonQuerySqlOpt(sql, uid)
+}
+
+func SyncDeleteSqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
+	return SyncNonQuerySqlOpt(sql, uid)
+}
+
+func SyncInsertOrUpdateSqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
+	return SyncNonQuerySqlOpt(sql, uid)
+}
+
+func SyncNonQuerySqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
+	command := NewSyncCommonCommand(sql, false)
+	if command == nil {
+		return nil, errors.New("NewSyncCommonCommand Error")
+	}
+	conn := GDBModule.GetMysqlConn(uid)
+	if conn == nil {
+		return nil, errors.New(fmt.Sprintf("Mysql SyncNonQuerySql GetMysqlConn Error Uid=%v", uid))
+	}
+
+	command.OnExecuteSql(conn)
+	return command.GetExecuteSqlResult()
 }
 
 //异步

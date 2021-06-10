@@ -1,31 +1,31 @@
 package edb
 
 type ExecSqlFunc func(conn IMysqlConn, attach []interface{}) (IMysqlRecordSet, int32, error)
-type ExecSqlRecordFunc func(record_set IMysqlRecordSet, attach []interface{}, error_code int32, err error)
+type ExecSqlRecordFunc func(recordSet IMysqlRecordSet, attach []interface{}, errorCode int32, err error)
 
 type CommonCommand struct {
-	execSql    ExecSqlFunc
-	execRec    ExecSqlRecordFunc
-	attach     []interface{}
-	record_set IMysqlRecordSet
-	error_code int32
-	err        error
+	execSqlFunc ExecSqlFunc
+	execRecFunc ExecSqlRecordFunc
+	attach      []interface{}
+	recordSet   IMysqlRecordSet
+	errorCode   int32
+	err         error
 }
 
-func NewCommonCommand(execSql ExecSqlFunc, execRec ExecSqlRecordFunc, attach []interface{}) *CommonCommand {
-	if execSql == nil {
+func NewCommonCommand(execSqlFunc ExecSqlFunc, execRecFunc ExecSqlRecordFunc, attach []interface{}) *CommonCommand {
+	if execSqlFunc == nil {
 		return nil
 	}
 
-	if execRec == nil {
+	if execRecFunc == nil {
 		return nil
 	}
 	return &CommonCommand{
-		execSql:    execSql,
-		execRec:    execRec,
-		attach:     attach,
-		record_set: nil,
-		err:        nil,
+		execSqlFunc: execSqlFunc,
+		execRecFunc: execRecFunc,
+		attach:      attach,
+		recordSet:   nil,
+		err:         nil,
 	}
 }
 
@@ -34,9 +34,35 @@ func (c *CommonCommand) SetAttach(datas []interface{}) {
 }
 
 func (c *CommonCommand) OnExecuteSql(conn IMysqlConn) {
-	c.record_set, c.error_code, c.err = c.execSql(conn, c.attach)
+	c.recordSet, c.errorCode, c.err = c.execSqlFunc(conn, c.attach)
 }
 
 func (c *CommonCommand) OnExecuted() {
-	c.execRec(c.record_set, c.attach, c.error_code, c.err)
+	c.execRecFunc(c.recordSet, c.attach, c.errorCode, c.err)
+}
+
+//---------------------------------------------------------------------------------------------------------
+type SyncCommonCommand struct {
+	sql       string
+	queryFlag bool
+	recordSet IMysqlRecordSet
+	err       error
+}
+
+func NewSyncCommonCommand(sql string, queryFlag bool) *SyncCommonCommand {
+	return &SyncCommonCommand{
+		sql: sql,
+	}
+}
+
+func (c *SyncCommonCommand) OnExecuteSql(conn IMysqlConn) {
+	if c.queryFlag {
+		c.recordSet, c.err = conn.QueryWithResult(c.sql)
+	} else {
+		c.recordSet, c.err = conn.QueryWithoutResult(c.sql)
+	}
+}
+
+func (c *SyncCommonCommand) GetExecuteSqlResult() (IMysqlRecordSet, error) {
+	return c.recordSet, c.err
 }
