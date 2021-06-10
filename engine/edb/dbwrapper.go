@@ -13,27 +13,11 @@ func SyncQuerySqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
 	}
 	conn := GDBModule.GetMysqlConn(uid)
 	if conn == nil {
-		return nil, errors.New(fmt.Sprintf("Mysql SyncQuerySql GetMysqlConn Error Uid=%v", uid))
+		return nil, fmt.Errorf("Mysql SyncQuerySql GetMysqlConn Error Uid=%v", uid)
 	}
 
 	command.OnExecuteSql(conn)
 	return command.GetExecuteSqlResult()
-}
-
-func SyncInsertSqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
-	return SyncNonQuerySqlOpt(sql, uid)
-}
-
-func SyncUpdateSqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
-	return SyncNonQuerySqlOpt(sql, uid)
-}
-
-func SyncDeleteSqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
-	return SyncNonQuerySqlOpt(sql, uid)
-}
-
-func SyncInsertOrUpdateSqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
-	return SyncNonQuerySqlOpt(sql, uid)
 }
 
 func SyncNonQuerySqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
@@ -43,7 +27,7 @@ func SyncNonQuerySqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
 	}
 	conn := GDBModule.GetMysqlConn(uid)
 	if conn == nil {
-		return nil, errors.New(fmt.Sprintf("Mysql SyncNonQuerySql GetMysqlConn Error Uid=%v", uid))
+		return nil, fmt.Errorf("Mysql SyncNonQuerySql GetMysqlConn Error Uid=%v", uid)
 	}
 
 	command.OnExecuteSql(conn)
