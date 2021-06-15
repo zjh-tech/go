@@ -9,15 +9,15 @@ type IMysqlCommand interface {
 	OnExecuted()
 }
 
-type IMysqlRecordSet interface {
+type IDBResult interface {
 	GetRecordSet() []map[string]string
 	GetAffectRows() int64
 	GetInsertId() int64
 }
 
 type IMysqlConn interface {
-	QueryWithResult(sql string) (IMysqlRecordSet, error)
-	QueryWithoutResult(sql string) (IMysqlRecordSet, error)
+	QuerySqlOpt(sql string) (IDBResult, error)
+	NonQuerySqlOpt(sql string) (IDBResult, error)
 	FindSqlDb() *sql.DB
 	BeginTransact()
 	CommitTransact()

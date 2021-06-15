@@ -6,22 +6,16 @@ import (
 )
 
 //同步
-func SyncQuerySqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
-	command := NewSyncCommonCommand(sql, true)
-	if command == nil {
-		return nil, errors.New("NewSyncCommonCommand Error")
-	}
-	conn := GDBModule.GetMysqlConn(uid)
-	if conn == nil {
-		return nil, fmt.Errorf("Mysql SyncQuerySql GetMysqlConn Error Uid=%v", uid)
-	}
-
-	command.OnExecuteSql(conn)
-	return command.GetExecuteSqlResult()
+func SyncQuerySqlOpt(sql string, uid uint64) (IDBResult, error) {
+	return syncSqlOpt(sql, uid, true)
 }
 
-func SyncNonQuerySqlOpt(sql string, uid uint64) (IMysqlRecordSet, error) {
-	command := NewSyncCommonCommand(sql, false)
+func SyncNonQuerySqlOpt(sql string, uid uint64) (IDBResult, error) {
+	return syncSqlOpt(sql, uid, false)
+}
+
+func syncSqlOpt(sql string, uid uint64, queryFlag bool) (IDBResult, error) {
+	command := NewSyncCommonCommand(sql, queryFlag)
 	if command == nil {
 		return nil, errors.New("NewSyncCommonCommand Error")
 	}

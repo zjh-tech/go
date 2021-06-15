@@ -80,37 +80,37 @@ func (m *MysqlConn) FindSqlDb() *sql.DB {
 	return m.sqlDb
 }
 
-func (m *MysqlConn) QueryWithResult(sql string) (IMysqlRecordSet, error) {
+func (m *MysqlConn) QuerySqlOpt(sql string) (IDBResult, error) {
 	rows, err := m.sqlDb.Query(sql)
 	if err != nil {
-		ELog.ErrorAf("[Mysql] QueryWithResult Sql=%v, Error=%v", sql, err)
+		ELog.ErrorAf("[Mysql] QuerySqlOpt Sql=%v, Error=%v", sql, err)
 		return nil, err
 	}
 
-	ELog.InfoAf("[Mysql] QueryWithResult Sql=%v Success", sql)
+	ELog.InfoAf("[Mysql] QuerySqlOpt Sql=%v Success", sql)
 	return NewMysqlRecordSet(rows, DbDefaultAffectedRows, DbDefaultInsertId), nil
 }
 
-func (m *MysqlConn) QueryWithoutResult(sql string) (IMysqlRecordSet, error) {
+func (m *MysqlConn) NonQuerySqlOpt(sql string) (IDBResult, error) {
 	res, err := m.sqlDb.Exec(sql)
 	if err != nil {
-		ELog.InfoAf("[Mysql] QueryWithoutResult Sql=%v, Error=%v", sql, err)
+		ELog.InfoAf("[Mysql] NonQuerySqlOpt Sql=%v, Error=%v", sql, err)
 		return nil, err
 	}
 
 	affectedRows, err1 := res.RowsAffected()
 	if err1 != nil {
-		ELog.InfoAf("[Mysql] QueryWithoutResult Sql=%v,RowsAffected Error=%v", sql, err1)
+		ELog.InfoAf("[Mysql] NonQuerySqlOpt Sql=%v,RowsAffected Error=%v", sql, err1)
 		return nil, err1
 	}
 
 	insertId, err2 := res.LastInsertId()
 	if err2 != nil {
-		ELog.InfoAf("[Mysql] QueryWithoutResult Sql=%v,LastInsertId Error=%v", sql, err2)
+		ELog.InfoAf("[Mysql] NonQuerySqlOpt Sql=%v,LastInsertId Error=%v", sql, err2)
 		return nil, err2
 	}
 
-	ELog.InfoAf("[Mysql] QueryWithoutResult Sql=%v Success", sql)
+	ELog.InfoAf("[Mysql] NonQuerySqlOpt Sql=%v Success", sql)
 
 	return NewMysqlRecordSet(nil, affectedRows, insertId), nil
 }

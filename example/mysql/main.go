@@ -81,11 +81,6 @@ func (s *Server) Run() {
 }
 
 func TestSync() {
-	type CmdParas struct {
-		UserName string
-		Password string
-	}
-
 	start_index := 0
 	end_index := 200000
 	start_tick := util.GetMillsecond()
@@ -93,38 +88,27 @@ func TestSync() {
 	for i := start_index; i < end_index; i++ {
 		user_name := fmt.Sprintf("Test%v", i)
 
-		cmd_paras := &CmdParas{
-			UserName: user_name,
-			Password: "123456",
+		uid := util.Hash64(user_name)
+		tableName := edb.GDBModule.GetTableNameByUID("account", uid)
+		accountId := frame.GIdMaker.NextId()
+		insert_sql := edb.BuildInsertSQL(tableName, map[string]interface{}{
+			"accountid": accountId,
+			"username":  user_name,
+			"password":  "123456",
+		})
+
+		_, insertErr := edb.SyncNonQuerySqlOpt(insert_sql, util.Hash64(user_name))
+		if insertErr != nil {
+			return
 		}
 
-		//Insert
-		edb.SyncDoSqlOpt(func(conn edb.IMysqlConn, attach []interface{}) (edb.IMysqlRecordSet, int32, error) {
-			paras := attach[0].(*CmdParas)
-			uid := util.Hash64(paras.UserName)
-			tableName := edb.GDBModule.GetTableNameByUID("account", uid)
-			accountId := frame.GIdMaker.NextId()
-			insert_sql := edb.BuildInsertSQL(tableName, map[string]interface{}{
-				"accountid": accountId,
-				"username":  paras.UserName,
-				"password":  paras.Password,
-			})
-
-			_, insertErr := conn.QueryWithoutResult(insert_sql)
-			if insertErr != nil {
-				return nil, edb.DbExecFail, insertErr
-			}
-			return nil, edb.DbExecSuccess, nil
-		}, func(recordSet edb.IMysqlRecordSet, attach []interface{}, errorCode int32, err error) {
-			qps_count++
-			end_tick := util.GetMillsecond()
-			if (end_tick - start_tick) >= 1000 {
-				ELog.InfoAf("Insert Qps=%v", qps_count)
-				qps_count = 0
-				start_tick = end_tick
-			}
-		}, []interface{}{cmd_paras}, util.Hash64(user_name))
-
+		qps_count++
+		end_tick := util.GetMillsecond()
+		if (end_tick - start_tick) >= 1000 {
+			ELog.InfoAf("Insert Qps=%v", qps_count)
+			qps_count = 0
+			start_tick = end_tick
+		}
 	}
 
 	qps_count = 0
@@ -132,44 +116,32 @@ func TestSync() {
 	for i := start_index; i < end_index; i++ {
 		user_name := fmt.Sprintf("Test%v", i)
 
-		cmd_paras := &CmdParas{
-			UserName: user_name,
-			Password: "123456",
+		uid := util.Hash64(user_name)
+		tableName := edb.GDBModule.GetTableNameByUID("account", uid)
+		select_sql := edb.BuildSelectSQL(tableName, []string{
+			"accountid",
+			"username",
+			"password",
+		}, map[string]interface{}{
+			"username": user_name,
+		})
+
+		recordSet, selectErr := edb.SyncQuerySqlOpt(select_sql, util.Hash64(user_name))
+		if selectErr != nil {
+			return
 		}
 
-		//Select
-		edb.SyncDoSqlOpt(func(conn edb.IMysqlConn, attach []interface{}) (edb.IMysqlRecordSet, int32, error) {
-			paras := attach[0].(*CmdParas)
-			uid := util.Hash64(paras.UserName)
-			tableName := edb.GDBModule.GetTableNameByUID("account", uid)
-			select_sql := edb.BuildSelectSQL(tableName, []string{
-				"accountid",
-				"username",
-				"password",
-			}, map[string]interface{}{
-				"username": paras.UserName,
-			})
-
-			result, selectErr := conn.QueryWithResult(select_sql)
-			if selectErr != nil {
-				return nil, edb.DbExecFail, selectErr
-			}
-
-			rc := result.GetRecordSet()
-			if len(rc) >= 1 {
-				return nil, edb.DbExecFail, nil
-			}
-
-			return nil, edb.DbExecSuccess, nil
-		}, func(recordSet edb.IMysqlRecordSet, attach []interface{}, errorCode int32, err error) {
-			qps_count++
-			end_tick := util.GetMillsecond()
-			if (end_tick - start_tick) >= 1000 {
-				ELog.InfoAf("Select Qps=%v", qps_count)
-				qps_count = 0
-				start_tick = end_tick
-			}
-		}, []interface{}{cmd_paras}, util.Hash64(user_name))
+		rc := recordSet.GetRecordSet()
+		if len(rc) >= 1 {
+			return
+		}
+		qps_count++
+		end_tick := util.GetMillsecond()
+		if (end_tick - start_tick) >= 1000 {
+			ELog.InfoAf("Select Qps=%v", qps_count)
+			qps_count = 0
+			start_tick = end_tick
+		}
 	}
 }
 

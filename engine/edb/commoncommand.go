@@ -1,13 +1,13 @@
 package edb
 
-type ExecSqlFunc func(conn IMysqlConn, attach []interface{}) (IMysqlRecordSet, int32, error)
-type ExecSqlRecordFunc func(recordSet IMysqlRecordSet, attach []interface{}, errorCode int32, err error)
+type ExecSqlFunc func(conn IMysqlConn, attach []interface{}) (IDBResult, int32, error)
+type ExecSqlRecordFunc func(recordSet IDBResult, attach []interface{}, errorCode int32, err error)
 
 type CommonCommand struct {
 	execSqlFunc ExecSqlFunc
 	execRecFunc ExecSqlRecordFunc
 	attach      []interface{}
-	recordSet   IMysqlRecordSet
+	recordSet   IDBResult
 	errorCode   int32
 	err         error
 }
@@ -45,7 +45,7 @@ func (c *CommonCommand) OnExecuted() {
 type SyncCommonCommand struct {
 	sql       string
 	queryFlag bool
-	recordSet IMysqlRecordSet
+	recordSet IDBResult
 	err       error
 }
 
@@ -57,12 +57,12 @@ func NewSyncCommonCommand(sql string, queryFlag bool) *SyncCommonCommand {
 
 func (c *SyncCommonCommand) OnExecuteSql(conn IMysqlConn) {
 	if c.queryFlag {
-		c.recordSet, c.err = conn.QueryWithResult(c.sql)
+		c.recordSet, c.err = conn.QuerySqlOpt(c.sql)
 	} else {
-		c.recordSet, c.err = conn.QueryWithoutResult(c.sql)
+		c.recordSet, c.err = conn.NonQuerySqlOpt(c.sql)
 	}
 }
 
-func (c *SyncCommonCommand) GetExecuteSqlResult() (IMysqlRecordSet, error) {
+func (c *SyncCommonCommand) GetExecuteSqlResult() (IDBResult, error) {
 	return c.recordSet, c.err
 }
