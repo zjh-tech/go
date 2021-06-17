@@ -51,7 +51,8 @@ type SyncCommonCommand struct {
 
 func NewSyncCommonCommand(sql string, queryFlag bool) *SyncCommonCommand {
 	return &SyncCommonCommand{
-		sql: sql,
+		sql:       sql,
+		queryFlag: queryFlag,
 	}
 }
 
