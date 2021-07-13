@@ -20,11 +20,13 @@ type LogSpec struct {
 	Level int
 }
 
+type RedisConnSpec struct {
+	Addr string
+}
+
 type RedisSpec struct {
-	Name     string
-	Host     string
-	Port     int
-	Password string
+	Password string           `yaml:"password"`
+	AddrList []*RedisConnSpec `yaml:"addrlist"`
 }
 
 type DBSpec struct {
@@ -49,6 +51,14 @@ type ServerCfg struct {
 
 func NewServerCfg() *ServerCfg {
 	return &ServerCfg{}
+}
+
+func (s *ServerCfg) GetRedisAddrs() []string {
+	addrs := make([]string, 0)
+	for _, info := range s.RedisInfo.AddrList {
+		addrs = append(addrs, info.Addr)
+	}
+	return addrs
 }
 
 func ReadServerCfg(path string) (*ServerCfg, error) {

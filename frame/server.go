@@ -116,14 +116,15 @@ func (s *Server) Init() bool {
 
 	rand.Seed(time.Now().UnixNano())
 	//Redis
+	redisAddrs := s.srvCfg.GetRedisAddrs()
 	if s.srvCfg.RedisInfo != nil {
-		redisClient, connErr := eredis.ConnectRedis(s.srvCfg.RedisInfo.Host, s.srvCfg.RedisInfo.Port, s.srvCfg.RedisInfo.Password)
+		redisClient, connErr := eredis.ConnectRedis(redisAddrs, s.srvCfg.RedisInfo.Password)
 		if connErr != nil {
-			ELog.Errorf("Redis Host=%v, Port=%v, Password=%v Connect Error", s.srvCfg.RedisInfo.Host, s.srvCfg.RedisInfo.Port, s.srvCfg.RedisInfo.Password)
+			ELog.Errorf("Redis redisAddrs=%v,Connect Error", redisAddrs)
 			return false
 		} else {
 			eredis.GRedisClient = redisClient
-			ELog.Infof("Redis Host=%v, Port=%v, Password=%v Connect Success", s.srvCfg.RedisInfo.Host, s.srvCfg.RedisInfo.Port, s.srvCfg.RedisInfo.Password)
+			ELog.Infof("Redis redisAddrs=%v,Connect Success", redisAddrs)
 		}
 	}
 	//Db

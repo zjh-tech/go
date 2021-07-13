@@ -9,10 +9,20 @@ log:
     level: 1
 
 redis:
-    name: "redis_0"
-    host: "127.0.0.1"
-    port: 6379
-    password:     
+  password:
+  addrlist:
+  -
+   addr:  "127.0.0.1:6379"
+  -
+   addr:  "127.0.0.1:6380"
+  -
+   addr:  "127.0.0.1:6381"
+  -
+   addr:  "127.0.0.1:6382"
+  -
+   addr:  "127.0.0.1:6383"
+  - 
+   addr:  "127.0.0.1:6384"  
 
 db:
   connmaxcount:  1
