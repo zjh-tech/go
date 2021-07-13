@@ -15,7 +15,7 @@ import (
 	"github.com/zjh-tech/go-frame/engine/etimer"
 )
 
-type IServerFacade interface {
+type IServer interface {
 	Init() bool
 
 	Run()
