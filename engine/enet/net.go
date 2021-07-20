@@ -142,24 +142,23 @@ func (n *Net) Run(loopCount int) bool {
 	for ; i < loopCount; i++ {
 		select {
 		case evt, ok := <-n.evtQueue.GetEventQueue():
-			tcp_evt := evt.(*TcpEvent)
+			tcpEvt := evt.(*TcpEvent)
 			if !ok {
 				return false
 			}
 
-			return tcp_evt.ProcessMsg()
+			tcpEvt.ProcessMsg()
 		case evt, ok := <-n.httpEvtQueue.GetEventQueue():
 			if !ok {
 				return false
 			}
-			http_evt := evt.(*HttpEvent)
-			return http_evt.ProcessMsg()
+			httpEvt := evt.(*HttpEvent)
+			httpEvt.ProcessMsg()
 		default:
 			return false
 		}
 	}
-	ELog.ErrorA("[Net] Run Error")
-	return false
+	return true
 }
 
 func (n *Net) Update() {

@@ -3,6 +3,7 @@ package frame
 import (
 	"math/rand"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/google/gops/agent"
@@ -97,6 +98,9 @@ func (s *Server) Init() bool {
 
 	s.ip, _ = util.GetLocalIp()
 
+	rand.Seed(time.Now().UTC().UnixNano())
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	//Log
 	s.logger = elog.NewLogger(s.srvCfg.LogInfo.Path, s.srvCfg.LogInfo.Level)
 	s.logger.Init()
@@ -114,7 +118,6 @@ func (s *Server) Init() bool {
 		return false
 	}
 
-	rand.Seed(time.Now().UnixNano())
 	//Redis
 	redisAddrs := s.srvCfg.GetRedisAddrs()
 	if s.srvCfg.RedisInfo != nil {
@@ -142,7 +145,7 @@ func (s *Server) Init() bool {
 	//Uid
 	idMaker, idErr := NewIdMaker(int64(s.GetServerId()), true)
 	if idErr != nil {
-		ELog.Errorf("Server IdMaker Error=%v", idMaker)
+		ELog.Errorf("Server IdMaker Error=%v", idErr)
 		return false
 	}
 	GIdMaker = idMaker

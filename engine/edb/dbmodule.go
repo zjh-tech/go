@@ -127,13 +127,11 @@ func (d *DBModule) Run(loopCount int) bool {
 			}
 
 			cmd.OnExecuted()
-			return true
 		default:
 			return false
 		}
 	}
-	ELog.ErrorA("[DBModule] Run Error")
-	return false
+	return true
 }
 
 var GDBModule *DBModule
