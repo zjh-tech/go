@@ -144,12 +144,13 @@ func (c *Connection) close(terminate bool) {
 				case <-closeTimer.C:
 					{
 						if len(c.msgChan) <= 0 && len(c.msgBuffChan) <= 0 {
-							c.on_close()
+							c.onClose()
+							return
 						}
 					}
 				case <-closeTimeoutTimer.C:
 					{
-						c.on_close()
+						c.onClose()
 						return
 					}
 				}
@@ -158,11 +159,11 @@ func (c *Connection) close(terminate bool) {
 	} else {
 		//被动断开
 		ELog.InfoAf("[Net][Connection] ConnID=%v Passive Closed", c.connId)
-		c.on_close()
+		c.onClose()
 	}
 }
 
-func (c *Connection) on_close() {
+func (c *Connection) onClose() {
 	if c.conn != nil {
 		c.exitChan <- struct{}{} //close writer Goroutine
 		c.conn.Close()           //close reader Goroutine
