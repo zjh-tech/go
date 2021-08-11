@@ -69,13 +69,8 @@ func (m *IdMaker) nextId() int64 {
 func (m *IdMaker) NextId() int64 {
 	if m.safeFlag {
 		m.mutex.Lock()
+		defer m.mutex.Unlock()
 	}
-
-	defer func() {
-		if m.safeFlag {
-			m.mutex.Unlock()
-		}
-	}()
 
 	return m.nextId()
 }
@@ -84,13 +79,9 @@ func (m *IdMaker) NextIds(num int) []int64 {
 	ids := make([]int64, num)
 	if m.safeFlag {
 		m.mutex.Lock()
+		defer m.mutex.Unlock()
 	}
 
-	defer func() {
-		if m.safeFlag {
-			m.mutex.Unlock()
-		}
-	}()
 	for i := 0; i < num; i++ {
 		ids[i] = m.nextId()
 	}

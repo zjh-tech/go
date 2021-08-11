@@ -20,17 +20,17 @@ func (d *DBModule) Init(connMaxCount uint64, dbTableMaxCount uint64, connSpecs [
 	d.connSpecs = connSpecs
 
 	if d.connMaxCount == 0 {
-		return errors.New("[DBModule] No Mysql Connect")
+		return errors.New("[DBModule] Mysql ConnMaxCount = 0")
 	}
 
 	if d.connMaxCount != uint64(len(d.connSpecs)) {
-		return errors.New("[DBModule] Mysql No Match")
+		return errors.New("[DBModule] Mysql ConnMaxCount And DBConnSpec No Match")
 	}
 
 	for i := uint64(0); i < d.connMaxCount; i++ {
 		dbNameSlices := strings.Split(d.connSpecs[i].Name, "_")
 		if len(dbNameSlices) != 2 {
-			return errors.New("[DBModule] Mysql Index Error")
+			return errors.New("[DBModule] Mysql Sub Database and sub Table must is _ split as logindb_0 accountverify_00 Error")
 		}
 
 		dbIndex, _ := Str2Uint64(dbNameSlices[1])
@@ -127,11 +127,13 @@ func (d *DBModule) Run(loopCount int) bool {
 			}
 
 			cmd.OnExecuted()
+			return true
 		default:
 			return false
 		}
 	}
-	return true
+	ELog.ErrorA("[DBModule] Run Error")
+	return false
 }
 
 var GDBModule *DBModule
