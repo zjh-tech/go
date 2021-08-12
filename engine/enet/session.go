@@ -1,6 +1,8 @@
 package enet
 
 import (
+	"encoding/json"
+
 	"github.com/golang/protobuf/proto"
 )
 
@@ -106,7 +108,21 @@ func (s *Session) AsyncSendProtoMsg(msgId uint32, msg proto.Message) bool {
 
 	datas, err := proto.Marshal(msg)
 	if err != nil {
-		ELog.ErrorAf("[Net] Msg=%v Marshal Err %v ", msgId, err)
+		ELog.ErrorAf("[Net] Msg=%v Proto.Marshal Err %v ", msgId, err)
+		return false
+	}
+
+	return s.AsyncSendMsg(msgId, datas)
+}
+
+func (s *Session) AsyncSendJsonMsg(msgId uint32, js interface{}) bool {
+	if s.conn == nil {
+		return false
+	}
+
+	datas, err := json.Marshal(js)
+	if err != nil {
+		ELog.ErrorAf("[Net] Msg=%v Json.Marshal Err %v ", msgId, err)
 		return false
 	}
 

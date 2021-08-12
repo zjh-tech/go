@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/zjh-tech/go-frame/base/convert"
 )
 
 func getMillsecond() int64 {
 	return time.Now().UnixNano() / 1e6
+}
+
+func int642Str(n int64) string {
+	return strconv.FormatInt(n, 10)
 }
 
 const (
@@ -64,7 +67,7 @@ func (t *TimeMeter) CheckOut() {
 				t.buf.WriteString("-")
 			}
 			t.buf.WriteString("[")
-			t.buf.WriteString(convert.Int642Str(t.stampTicks[i] - t.startStampTick))
+			t.buf.WriteString(int642Str(t.stampTicks[i] - t.startStampTick))
 			t.buf.WriteString("]")
 		}
 
