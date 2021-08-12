@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	PackageHeaderLen uint32 = 6 //MsgHeader(bool + bool + uint32)
+	PackageHeaderLen uint32 = 4
 	PackageMsgIDLen  int    = 4
 )
 

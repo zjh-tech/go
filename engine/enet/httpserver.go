@@ -9,7 +9,13 @@ import (
 type HttpHandlerFunc func(engine *gin.Engine) error
 
 func HttpListen(addr string, cert string, key string, handler HttpHandlerFunc) {
+	if addr == "" {
+		message := fmt.Sprintf("HttpListen  Addr=%v Empty", addr)
+		panic(message)
+	}
+
 	go func() {
+		//gin.SetMode(gin.ReleaseMode)
 		engine := gin.Default()
 		handler(engine)
 

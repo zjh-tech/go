@@ -62,7 +62,10 @@ func (s *ServerCfg) GetRedisAddrs() []string {
 }
 
 func ReadServerCfg(path string) (*ServerCfg, error) {
-	content, _ := ioutil.ReadFile(path)
+	content, readErr := ioutil.ReadFile(path)
+	if readErr != nil {
+		return nil, readErr
+	}
 	serverCfg := NewServerCfg()
 	if err := yaml.Unmarshal(content, &serverCfg); err != nil {
 		return nil, err
