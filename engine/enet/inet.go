@@ -7,7 +7,6 @@ import (
 )
 
 type INet interface {
-	SetMultiProcessMsg()
 	PushEvent(IEvent)
 	PushSingleHttpEvent(IHttpEvent)
 	PushMultiHttpEvent(IHttpEvent)
@@ -61,6 +60,14 @@ type IEvent interface {
 
 //ISession
 type ISession interface {
+	SetSessionConcurrentFlag(flag bool)
+
+	GetSessionConcurrentFlag() bool
+
+	StartSessionConcurrentGoroutine()
+
+	PushEvent(IEvent)
+
 	SetConnection(conn IConnection)
 
 	GetSessID() uint64
@@ -98,7 +105,7 @@ type ISession interface {
 
 //ISessionFactory
 type ISessionFactory interface {
-	CreateSession() ISession
+	CreateSession(isListenFlag bool) ISession
 	AddSession(session ISession)
 	RemoveSession(id uint64)
 	GetSessionCount() int

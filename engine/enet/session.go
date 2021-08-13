@@ -8,12 +8,29 @@ import (
 
 type Session struct {
 	ISessionOnHandler
-	conn     IConnection
-	sessId   uint64
-	attach   interface{}
-	coder    ICoder
-	sessType SessionType
-	factory  ISessionFactory
+	conn                  IConnection
+	sessId                uint64
+	attach                interface{}
+	coder                 ICoder
+	sessType              SessionType
+	factory               ISessionFactory
+	sessionConcurrentFlag bool
+	evtQueue              IEventQueue
+}
+
+func (s *Session) SetSessionConcurrentFlag(flag bool) {
+	s.sessionConcurrentFlag = flag
+	if s.sessionConcurrentFlag {
+		s.evtQueue = newEventQueue(NetChannelMaxSize)
+	}
+}
+
+func (s *Session) GetSessionConcurrentFlag() bool {
+	return s.sessionConcurrentFlag
+}
+
+func (s *Session) PushEvent(IEvent) {
+
 }
 
 func (s *Session) SetConnection(conn IConnection) {
@@ -78,6 +95,26 @@ func (s *Session) SetSessionFactory(factory ISessionFactory) {
 
 func (s *Session) GetSessionFactory() ISessionFactory {
 	return s.factory
+}
+
+func (s *Session) StartSessionConcurrentGoroutine() {
+	ELog.ErrorAf("[Net][Session] SessID=%v ConnID=%v ProcessMsg Goroutine Start", s.sessId, s.conn.GetConnID())
+	go func() {
+		for {
+			select {
+			case evt, ok := <-s.evtQueue.GetEventQueue():
+				if !ok {
+					return
+				}
+				tcpEvt := evt.(*TcpEvent)
+				tcpEvt.ProcessMsg()
+				if tcpEvt.eventType == ConnCloseType {
+					ELog.ErrorAf("[Net][Session] SessID=%v ConnID=%v ProcessMsg Goroutine Exit", s.sessId, s.conn.GetConnID())
+					return
+				}
+			}
+		}
+	}()
 }
 
 func (s *Session) Terminate() {

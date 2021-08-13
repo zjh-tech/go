@@ -1,8 +1,8 @@
 package enet
 
 import (
+	"fmt"
 	"net"
-	"runtime"
 )
 
 type ConnEvent struct {
@@ -14,15 +14,13 @@ type Net struct {
 	evtQueue     IEventQueue
 	httpEvtQueue IEventQueue
 	connQueue    chan ConnEvent
-	multiFlag    bool
 }
 
-func newNet(max_evt_count uint32, max_conn_count uint32) *Net {
+func newNet(maxEvtCount uint32, maxConnCount uint32) *Net {
 	return &Net{
-		evtQueue:     new_event_queue(max_evt_count),
-		httpEvtQueue: new_event_queue(max_conn_count),
-		connQueue:    make(chan ConnEvent, max_conn_count),
-		multiFlag:    false,
+		evtQueue:     newEventQueue(maxEvtCount),
+		httpEvtQueue: newEventQueue(maxConnCount),
+		connQueue:    make(chan ConnEvent, maxConnCount),
 	}
 }
 
@@ -56,21 +54,8 @@ func (n *Net) UnInit() {
 	ELog.Info("[Net] Stop")
 }
 
-func (n *Net) SetMultiProcessMsg() {
-	n.multiFlag = true
-	if GMsgHandlerPool == nil {
-		chanSize := 100000
-		GMsgHandlerPool = NewMsgHandlerPool(runtime.NumCPU(), chanSize)
-		GMsgHandlerPool.Init()
-	}
-}
-
 func (n *Net) PushEvent(evt IEvent) {
-	if n.multiFlag {
-		GMsgHandlerPool.PushEvent(evt)
-	} else {
-		n.evtQueue.PushEvent(evt)
-	}
+	n.evtQueue.PushEvent(evt)
 }
 
 func (n *Net) PushSingleHttpEvent(http_evt IHttpEvent) {
@@ -84,14 +69,16 @@ func (n *Net) PushMultiHttpEvent(http_evt IHttpEvent) {
 func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int) bool {
 	tcp_addr, err := net.ResolveTCPAddr("tcp4", addr)
 	if err != nil {
-		ELog.Errorf("[Net] Addr=%v ResolveTCPAddr Error=%v", addr, err)
-		return false
+		message := fmt.Sprintf("[Net] Addr=%v ResolveTCPAddr Error=%v", addr, err)
+		ELog.Errorf(message)
+		panic(message)
 	}
 
 	listen, listen_err := net.ListenTCP("tcp4", tcp_addr)
 	if listen_err != nil {
-		ELog.Errorf("[Net] Addr=%v ListenTCP Error=%v", tcp_addr, listen_err)
-		return false
+		message := fmt.Sprintf("[Net] Addr=%v ListenTCP Error=%v", tcp_addr, listen_err)
+		ELog.Errorf(message)
+		panic(message)
 	}
 
 	ELog.Infof("[Net] Addr=%v ListenTCP Success", tcp_addr)
@@ -111,7 +98,7 @@ func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int) b
 				continue
 			}
 
-			session := sessfactory.CreateSession()
+			session := sessfactory.CreateSession(true)
 			if session == nil {
 				ELog.ErrorA("[Net] CreateSession Error")
 				netConn.Close()
@@ -142,11 +129,10 @@ func (n *Net) Run(loopCount int) bool {
 	for ; i < loopCount; i++ {
 		select {
 		case evt, ok := <-n.evtQueue.GetEventQueue():
-			tcpEvt := evt.(*TcpEvent)
 			if !ok {
 				return false
 			}
-
+			tcpEvt := evt.(*TcpEvent)
 			tcpEvt.ProcessMsg()
 		case evt, ok := <-n.httpEvtQueue.GetEventQueue():
 			if !ok {
@@ -178,5 +164,5 @@ func (n *Net) Update() {
 var GNet *Net
 
 func init() {
-	GNet = newNet(1024*10, 60000)
+	GNet = newNet(NetChannelMaxSize, NetMaxConnectSize)
 }

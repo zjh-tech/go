@@ -23,15 +23,18 @@ const (
 	C2SSendBeatHeartTime int64 = 1000 * 20
 )
 
-func NewCSSession(handler ICSMsgHandler) *CSSession {
+func NewCSSession(handler ICSMsgHandler, isListenFlag bool) *CSSession {
 	sess := &CSSession{
 		handler:                handler,
 		lastCheckBeatHeartTime: getMillsecond(),
 		lastSendBeatHeartTime:  getMillsecond(),
 	}
-
-	sess.SetListenType()
 	sess.Session.ISessionOnHandler = sess
+	if isListenFlag {
+		sess.SetListenType()
+	} else {
+		sess.SetConnectType()
+	}
 	return sess
 }
 
@@ -104,11 +107,12 @@ func (c *CSSessionMgr) Update() {
 	}
 }
 
-func (c *CSSessionMgr) CreateSession() ISession {
-	sess := NewCSSession(c.handler)
+func (c *CSSessionMgr) CreateSession(isListenFlag bool) ISession {
+	sess := NewCSSession(c.handler, isListenFlag)
 	sess.SetSessID(c.nextId)
 	sess.SetCoder(c.coder)
 	sess.SetSessionFactory(c)
+	sess.SetSessionConcurrentFlag(true)
 	c.nextId++
 	return sess
 }
@@ -157,8 +161,7 @@ func (c *CSSessionMgr) Connect(addr string, handler ICSMsgHandler, coder ICoder)
 
 	c.coder = coder
 	c.handler = handler
-	sess := c.CreateSession()
-	sess.SetConnectType()
+	sess := c.CreateSession(false)
 	GNet.Connect(addr, sess)
 }
 

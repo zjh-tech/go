@@ -5,9 +5,9 @@ type EventQueue struct {
 	evtQueue chan interface{}
 }
 
-func new_event_queue(max_count uint32) *EventQueue {
+func newEventQueue(maxCount uint32) *EventQueue {
 	return &EventQueue{
-		evtQueue: make(chan interface{}, max_count),
+		evtQueue: make(chan interface{}, maxCount),
 	}
 }
 

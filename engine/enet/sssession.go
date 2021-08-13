@@ -46,14 +46,18 @@ type SSSession struct {
 	logicServer            ILogicServer
 }
 
-func NewSSSession() *SSSession {
+func NewSSSession(isListenFlag bool) *SSSession {
 	session := &SSSession{
 		sessState:              SessCloseState,
 		lastSendBeatHeartTime:  getMillsecond(),
 		lastCheckBeatHeartTime: getMillsecond(),
 	}
-	session.SetListenType()
 	session.Session.ISessionOnHandler = session
+	if isListenFlag {
+		session.SetListenType()
+	} else {
+		session.SetConnectType()
+	}
 	return session
 }
 
@@ -271,8 +275,8 @@ func (s *SSSessionMgr) Update() {
 	}
 }
 
-func (s *SSSessionMgr) CreateSession() ISession {
-	sess := NewSSSession()
+func (s *SSSessionMgr) CreateSession(isListenFlag bool) ISession {
+	sess := NewSSSession(isListenFlag)
 	sess.SetSessID(s.nextId)
 	sess.SetCoder(NewCoder())
 	sess.SetLocalToken(s.token)
@@ -433,7 +437,7 @@ func (s *SSSessionMgr) GetSessionIdByHashIdAndSrvType(hashId uint64, serverType 
 }
 
 func (s *SSSessionMgr) SSServerConnect(verifySpec VerifySessionSpec, remoteSepc RemoteSessionSpec) {
-	session := s.CreateSession()
+	session := s.CreateSession(false)
 	if session != nil {
 		cache := &SSSessionCache{
 			ServerID:      remoteSepc.ServerID,
@@ -447,8 +451,6 @@ func (s *SSSessionMgr) SSServerConnect(verifySpec VerifySessionSpec, remoteSepc 
 		serverSession := session.(*SSSession)
 		serverSession.SetVerifySpec(verifySpec)
 		serverSession.SetRemoteSpec(remoteSepc)
-
-		serverSession.SetConnectType()
 		GNet.Connect(remoteSepc.Ip, serverSession)
 	}
 }

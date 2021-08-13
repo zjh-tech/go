@@ -5,7 +5,6 @@ import (
 	"crypto/des"
 	"crypto/md5"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"hash/fnv"
@@ -17,7 +16,6 @@ import (
 	"time"
 )
 
-//time
 func GetMillsecond() int64 {
 	return time.Now().UnixNano() / 1e6
 }
@@ -96,14 +94,6 @@ func Shuffle(s []int) {
 	}
 }
 
-func SliceRemoveByIndex(s []interface{}, i int) {
-	s = append(s[:i], s[i+1:]...)
-}
-
-func SliceRemoveByElem(s []interface{}, value interface{}) {
-
-}
-
 //math.MaxUint32
 func EnsureRange(value *int32, min int32, max int32) {
 	if *value < min {
@@ -121,16 +111,6 @@ const (
 	TwoSplitChar   string = "|"
 	ThreeSplitChar string = "^"
 )
-
-func Uint32ToNetBytes(value uint32) []byte {
-	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, value)
-	return buf
-}
-
-func NetBytesToUint32(buf []byte) uint32 {
-	return binary.BigEndian.Uint32(buf)
-}
 
 func GetLocalIp() (string, error) {
 	addrs, err := net.InterfaceAddrs()

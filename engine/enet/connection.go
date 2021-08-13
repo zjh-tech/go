@@ -102,8 +102,13 @@ func (c *Connection) StartReader() {
 			return
 		}
 
-		msg_event := NewTcpEvent(ConnRecvMsgType, c, realBodyBytes)
-		c.net.PushEvent(msg_event)
+		msgEvent := NewTcpEvent(ConnRecvMsgType, c, realBodyBytes)
+
+		if c.session.GetSessionConcurrentFlag() {
+			c.session.PushEvent(msgEvent)
+		} else {
+			c.net.PushEvent(msgEvent)
+		}
 
 		//atomic.AddInt64(&GRecvQps, 1)
 	}
@@ -111,7 +116,12 @@ func (c *Connection) StartReader() {
 
 func (c *Connection) Start() {
 	establishEvent := NewTcpEvent(ConnEstablishType, c, nil)
-	c.net.PushEvent(establishEvent)
+	if c.session.GetSessionConcurrentFlag() {
+		c.session.StartSessionConcurrentGoroutine()
+		c.session.PushEvent(establishEvent)
+	} else {
+		c.net.PushEvent(establishEvent)
+	}
 
 	go c.StartReader()
 	go c.StartWriter()
@@ -127,7 +137,11 @@ func (c *Connection) close(terminate bool) {
 	}
 
 	closeEvent := NewTcpEvent(ConnCloseType, c, terminate)
-	c.net.PushEvent(closeEvent) //业务logci处理CloseEvent
+	if c.session.GetSessionConcurrentFlag() {
+		c.session.PushEvent(closeEvent)
+	} else {
+		c.net.PushEvent(closeEvent)
+	}
 
 	if terminate {
 		//主动断开

@@ -28,13 +28,17 @@ const (
 	SdkMgrUpdateTime     int64 = 1000 * 1
 )
 
-func NewSDKSession(handler ISdkMsgHandler) *SDKSession {
+func NewSDKSession(handler ISdkMsgHandler, isListenFlag bool) *SDKSession {
 	sess := &SDKSession{
 		handler:                handler,
 		lastCheckBeatHeartTime: getMillsecond(),
 	}
-	sess.SetListenType()
 	sess.Session.ISessionOnHandler = sess
+	if isListenFlag {
+		sess.SetListenType()
+	} else {
+		sess.SetConnectType()
+	}
 	return sess
 }
 
@@ -149,8 +153,8 @@ func (s *SDKSessionMgr) IsExistSessionOfSessID(sessionId uint64) bool {
 	return ok
 }
 
-func (s *SDKSessionMgr) CreateSession() ISession {
-	sess := NewSDKSession(s.handler)
+func (s *SDKSessionMgr) CreateSession(isListenFlag bool) ISession {
+	sess := NewSDKSession(s.handler, isListenFlag)
 	sess.SetSessID(s.nextId)
 	sess.SetCoder(s.coder)
 	sess.SetSessionFactory(s)
@@ -203,10 +207,9 @@ func (s *SDKSessionMgr) SdkConnect(addr string, handler ISdkMsgHandler, coder IC
 		coder = NewCoder()
 	}
 
-	//handler.Init()
 	s.handler = handler
 	s.coder = coder
-	sess := s.CreateSession()
+	sess := s.CreateSession(false)
 	sdkSess := sess.(*SDKSession)
 	sdkSess.SetRemoteOuter(addr)
 	sdkSess.SetConnectType()

@@ -31,6 +31,11 @@ const (
 	MsgFail    uint32 = 1
 )
 
+const (
+	NetChannelMaxSize = 1000000
+	NetMaxConnectSize = 60000
+)
+
 func getMillsecond() int64 {
 	return time.Now().UnixNano() / 1e6
 }

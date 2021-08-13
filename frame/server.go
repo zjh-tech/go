@@ -164,7 +164,7 @@ func (s *Server) Init() bool {
 
 	//Tcp Listen
 	GServer = s
-	enet.GSSSessionMgr.Init(s.GetIp())
+	enet.GSSSessionMgr.Init(s.GetToken())
 	if len(s.srvCfg.ServerInfo.Outer) != 0 {
 		if !enet.GSSSessionMgr.SSServerListen(s.srvCfg.ServerInfo.Outer) {
 			ELog.ErrorA("Server Listen Outer=%v", s.srvCfg.ServerInfo.Outer)
