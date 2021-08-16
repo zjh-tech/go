@@ -119,6 +119,7 @@ func (n *Net) Connect(addr string, sess ISession) {
 		addr: addr,
 		sess: sess,
 	}
+	ELog.InfoAf("[Net] Connect Addr=%v In ConnQueue", addr)
 	n.connQueue <- connEvt
 }
 

@@ -29,8 +29,8 @@ func (s *Session) GetSessionConcurrentFlag() bool {
 	return s.sessionConcurrentFlag
 }
 
-func (s *Session) PushEvent(IEvent) {
-
+func (s *Session) PushEvent(evt IEvent) {
+	s.evtQueue.PushEvent(evt)
 }
 
 func (s *Session) SetConnection(conn IConnection) {
@@ -98,7 +98,8 @@ func (s *Session) GetSessionFactory() ISessionFactory {
 }
 
 func (s *Session) StartSessionConcurrentGoroutine() {
-	ELog.ErrorAf("[Net][Session] SessID=%v ConnID=%v ProcessMsg Goroutine Start", s.sessId, s.conn.GetConnID())
+	connID := s.conn.GetConnID()
+	ELog.InfoAf("[Net][Session] SessID=%v ConnID=%v ProcessMsg Goroutine Start", s.sessId, connID)
 	go func() {
 		for {
 			select {
@@ -109,7 +110,7 @@ func (s *Session) StartSessionConcurrentGoroutine() {
 				tcpEvt := evt.(*TcpEvent)
 				tcpEvt.ProcessMsg()
 				if tcpEvt.eventType == ConnCloseType {
-					ELog.ErrorAf("[Net][Session] SessID=%v ConnID=%v ProcessMsg Goroutine Exit", s.sessId, s.conn.GetConnID())
+					ELog.InfoAf("[Net][Session] SessID=%v ConnID=%v ProcessMsg Goroutine Exit", s.sessId, connID)
 					return
 				}
 			}
@@ -134,6 +135,7 @@ func (s *Session) AsyncSendMsg(msgId uint32, datas []byte) bool {
 		ELog.ErrorAf("[Session] SesssionID=%v  SendMsg PackMsg Error=%v", s.GetSessID(), err)
 	}
 
+	ELog.DebugAf("[Net][Session] AsyncSendProtoMsg MsgId=%v,Datas=%v", msgId, datas)
 	s.conn.AsyncSend(allDatas)
 	return true
 }
@@ -149,6 +151,7 @@ func (s *Session) AsyncSendProtoMsg(msgId uint32, msg proto.Message) bool {
 		return false
 	}
 
+	ELog.DebugAf("[Net][Session] AsyncSendProtoMsg MsgId=%v,Protobuf=%v", msgId, msg)
 	return s.AsyncSendMsg(msgId, datas)
 }
 
@@ -163,5 +166,6 @@ func (s *Session) AsyncSendJsonMsg(msgId uint32, js interface{}) bool {
 		return false
 	}
 
+	ELog.DebugAf("[Net][Session] AsyncSendJsonMsg MsgId=%v,Json=%v", msgId, js)
 	return s.AsyncSendMsg(msgId, datas)
 }

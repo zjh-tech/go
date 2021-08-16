@@ -32,15 +32,15 @@ func (t *TcpEvent) ProcessMsg() bool {
 	}
 
 	if t.eventType == ConnEstablishType {
-		session.SetConnection(t.conn)
+		//session.SetConnection(t.conn)
 		session.OnEstablish()
 	} else if t.eventType == ConnRecvMsgType {
 		datas := t.datas.([]byte)
 		session.GetCoder().ProcessMsg(datas, session)
 	} else if t.eventType == ConnCloseType {
 		GConnectionMgr.Remove(t.conn.GetConnID())
-		session.SetConnection(nil)
 		session.OnTerminate()
+		session.SetConnection(nil)
 	}
 	return true
 }

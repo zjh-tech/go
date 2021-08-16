@@ -20,7 +20,7 @@ type Connection struct {
 
 func NewConnection(connId uint64, net INet, conn *net.TCPConn, sess ISession) *Connection {
 	maxMsgChansize := 500000
-	ELog.InfoAf("[Net][Connection] ConnID=%v Attach SessID=%v", connId, sess.GetSessID())
+	ELog.InfoAf("[Net][Connection] ConnID=%v Bind SessID=%v", connId, sess.GetSessID())
 	return &Connection{
 		connId:      connId,
 		net:         net,
@@ -117,6 +117,7 @@ func (c *Connection) StartReader() {
 func (c *Connection) Start() {
 	establishEvent := NewTcpEvent(ConnEstablishType, c, nil)
 	if c.session.GetSessionConcurrentFlag() {
+		c.session.SetConnection(c)
 		c.session.StartSessionConcurrentGoroutine()
 		c.session.PushEvent(establishEvent)
 	} else {
