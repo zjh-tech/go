@@ -3,6 +3,7 @@ package enet
 import (
 	"fmt"
 	"net"
+	"time"
 )
 
 type ConnEvent struct {
@@ -67,10 +68,12 @@ func (n *Net) PushMultiHttpEvent(httpEvt IHttpEvent) {
 }
 
 func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int) bool {
+	ELog.Infof("[Net] Start ListenTCP Addr=%v", addr)
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", addr)
 	if err != nil {
 		message := fmt.Sprintf("[Net] Addr=%v ResolveTCPAddr Error=%v", addr, err)
 		ELog.Errorf(message)
+		time.Sleep(1 * time.Second)
 		panic(message)
 	}
 
@@ -78,6 +81,7 @@ func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int) b
 	if listenErr != nil {
 		message := fmt.Sprintf("[Net] Addr=%v ListenTCP Error=%v", tcpAddr, listenErr)
 		ELog.Errorf(message)
+		time.Sleep(1 * time.Second)
 		panic(message)
 	}
 
