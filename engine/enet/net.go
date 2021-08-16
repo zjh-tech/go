@@ -58,30 +58,30 @@ func (n *Net) PushEvent(evt IEvent) {
 	n.evtQueue.PushEvent(evt)
 }
 
-func (n *Net) PushSingleHttpEvent(http_evt IHttpEvent) {
-	n.httpEvtQueue.PushEvent(http_evt)
+func (n *Net) PushSingleHttpEvent(httpEvt IHttpEvent) {
+	n.httpEvtQueue.PushEvent(httpEvt)
 }
 
-func (n *Net) PushMultiHttpEvent(http_evt IHttpEvent) {
-	http_evt.ProcessMsg()
+func (n *Net) PushMultiHttpEvent(httpEvt IHttpEvent) {
+	httpEvt.ProcessMsg()
 }
 
 func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int) bool {
-	tcp_addr, err := net.ResolveTCPAddr("tcp4", addr)
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", addr)
 	if err != nil {
 		message := fmt.Sprintf("[Net] Addr=%v ResolveTCPAddr Error=%v", addr, err)
 		ELog.Errorf(message)
 		panic(message)
 	}
 
-	listen, listen_err := net.ListenTCP("tcp4", tcp_addr)
-	if listen_err != nil {
-		message := fmt.Sprintf("[Net] Addr=%v ListenTCP Error=%v", tcp_addr, listen_err)
+	listen, listenErr := net.ListenTCP("tcp4", tcpAddr)
+	if listenErr != nil {
+		message := fmt.Sprintf("[Net] Addr=%v ListenTCP Error=%v", tcpAddr, listenErr)
 		ELog.Errorf(message)
 		panic(message)
 	}
 
-	ELog.Infof("[Net] Addr=%v ListenTCP Success", tcp_addr)
+	ELog.Infof("[Net] Addr=%v ListenTCP Success", tcpAddr)
 
 	go func(sessfactory ISessionFactory, listen *net.TCPListener, listenMaxCount int) {
 		for {
