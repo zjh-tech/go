@@ -68,14 +68,14 @@ func (s *SGLBClient) Init(url string, httpsFlag bool) bool {
 	return true
 }
 
-func (s *SGLBClient) SGLBPost(router string, datas []byte, cbFunc enet.HttpCbFunc, paras interface{}) {
+func (s *SGLBClient) SGLBPostJson(router string, js interface{}, cbFunc enet.HttpCbFunc, paras interface{}) {
 	var fullUrl string
 	if s.httpsFlag {
 		fullUrl = "https://" + s.url + "/" + router
 	} else {
 		fullUrl = "http://" + s.url + "/" + router
 	}
-	content, postErr := enet.Post(fullUrl, datas)
+	content, postErr := enet.PostJson(fullUrl, js)
 	if postErr != nil {
 		ELog.ErrorAf("SGLBPost Error %v", postErr)
 		return
@@ -86,25 +86,13 @@ func (s *SGLBClient) SGLBPost(router string, datas []byte, cbFunc enet.HttpCbFun
 
 //------------------------------------SLB API-----------------------------------------------------
 func (s *SGLBClient) SendServiceRegisterReq(spec *ServiceRegisterReq) {
-	datas, marshalErr := json.Marshal(spec)
-	if marshalErr != nil {
-		ELog.ErrorAf("ServiceRegisterReq json.Marshal Error %v", marshalErr)
-		return
-	}
-
-	go s.SGLBPost("service_register", datas, nil, nil)
+	go s.SGLBPostJson("service_register", spec, nil, nil)
 }
 
 func (s *SGLBClient) SendSelectMinServiceReq(serviceType uint32, cbFunc enet.HttpCbFunc, paras interface{}) {
 	req := &SelectMinServiceReq{}
 	req.ServiceType = serviceType
-	datas, marshalErr := json.Marshal(req)
-	if marshalErr != nil {
-		ELog.ErrorAf("SelectMinServiceReq json.Marshal Error %v", marshalErr)
-		return
-	}
-
-	go s.SGLBPost("select_min_service", datas, cbFunc, paras)
+	go s.SGLBPostJson("select_min_service", req, cbFunc, paras)
 }
 
 type SGLBClientHandlerFunc func(datas []byte, paras interface{})

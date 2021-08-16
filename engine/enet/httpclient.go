@@ -2,10 +2,21 @@ package enet
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"time"
 )
+
+func PostJson(url string, js interface{}) (content []byte, err error) {
+	datas, marshalErr := json.Marshal(js)
+	if marshalErr != nil {
+		ELog.ErrorAf("PostJson json.Marshal Error %v", marshalErr)
+		return nil, marshalErr
+	}
+
+	return Post(url, datas)
+}
 
 func Post(url string, data []byte) (content []byte, err error) {
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
