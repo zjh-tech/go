@@ -160,10 +160,6 @@ func (n *Net) Update() {
 	if GCSSessionMgr != nil {
 		GCSSessionMgr.Update()
 	}
-
-	if GSDKSessionMgr != nil {
-		GSDKSessionMgr.Update()
-	}
 }
 
 var GNet *Net

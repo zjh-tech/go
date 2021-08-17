@@ -40,6 +40,10 @@ func getMillsecond() int64 {
 	return time.Now().UnixNano() / 1e6
 }
 
+func getSecond() int64 {
+	return time.Now().UnixNano() / 1e9
+}
+
 const NetMajorVersion = 1
 const NetMinorVersion = 1
 

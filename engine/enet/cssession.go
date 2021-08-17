@@ -4,6 +4,13 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+const (
+	C2SBeatHeartMaxTime  int64 = 1000 * 60 * 2
+	C2SSendBeatHeartTime int64 = 1000 * 20
+	CsMgrUpdateTime      int64 = 1000 * 1
+	CsOnceConnectMaxTime int64 = 1000 * 10
+)
+
 type ICSMsgHandler interface {
 	OnHandler(msgId uint32, datas []byte, sess *CSSession)
 	OnConnect(sess *CSSession)
@@ -16,18 +23,15 @@ type CSSession struct {
 	handler                ICSMsgHandler
 	lastSendBeatHeartTime  int64
 	lastCheckBeatHeartTime int64
+	overloadModule         *OverLoadModule
 }
-
-const (
-	C2SBeatHeartMaxTime  int64 = 1000 * 60 * 2
-	C2SSendBeatHeartTime int64 = 1000 * 20
-)
 
 func NewCSSession(handler ICSMsgHandler, isListenFlag bool) *CSSession {
 	sess := &CSSession{
 		handler:                handler,
 		lastCheckBeatHeartTime: getMillsecond(),
 		lastSendBeatHeartTime:  getMillsecond(),
+		overloadModule:         nil,
 	}
 	sess.Session.ISessionOnHandler = sess
 	if isListenFlag {
@@ -38,9 +42,14 @@ func NewCSSession(handler ICSMsgHandler, isListenFlag bool) *CSSession {
 	return sess
 }
 
+func (c *CSSession) SetOverload(intervalTime int64, limit int64) {
+	c.overloadModule = NewOverLoadModule(intervalTime, limit)
+	ELog.InfoAf("CSSession SessId=%v SetOverload IntervalTime=%v,Limit=%v", c.GetSessID(), intervalTime, limit)
+}
+
 func (c *CSSession) OnEstablish() {
-	c.factory.AddSession(c)
 	ELog.InfoAf("CSSession %v Establish", c.GetSessID())
+	c.factory.AddSession(c)
 	c.handler.OnConnect(c)
 }
 
@@ -69,6 +78,7 @@ func (c *CSSession) OnTerminate() {
 }
 
 func (c *CSSession) OnHandler(msgId uint32, datas []byte) {
+	//底层提供了心跳
 	if msgId == C2SSessionPingId {
 		ELog.DebugAf("[CSSession] SessionID=%v RECV PING SEND PONG", c.GetSessID())
 		c.lastCheckBeatHeartTime = getMillsecond()
@@ -80,25 +90,67 @@ func (c *CSSession) OnHandler(msgId uint32, datas []byte) {
 		return
 	}
 
+	//业务层也可以提供另外的心跳
 	c.handler.OnHandler(msgId, datas, c)
 	c.lastCheckBeatHeartTime = getMillsecond()
+
+	if c.overloadModule != nil {
+		c.overloadModule.AddCount()
+		if c.overloadModule.IsOverLoad() {
+			ELog.ErrorAf("[CSSession] SessionID=%v OverLoad", c.GetSessID())
+			c.Terminate()
+			return
+		}
+	}
+}
+
+type CSSessionCache struct {
+	sessionId   uint64
+	addr        string
+	connectTick int64
 }
 
 type CSSessionMgr struct {
-	nextId  uint64
-	sessMap map[uint64]ISession
-	handler ICSMsgHandler
-	coder   ICoder
+	nextId         uint64
+	sessMap        map[uint64]ISession
+	handler        ICSMsgHandler
+	coder          ICoder
+	cacheMap       map[uint64]*CSSessionCache
+	lastUpdateTime int64
 }
 
 func NewCSSessionMgr() *CSSessionMgr {
 	return &CSSessionMgr{
-		nextId:  1,
-		sessMap: make(map[uint64]ISession),
+		nextId:         1,
+		sessMap:        make(map[uint64]ISession),
+		cacheMap:       make(map[uint64]*CSSessionCache),
+		lastUpdateTime: getMillsecond(),
 	}
 }
 
+func (c *CSSessionMgr) IsInConnectCache(sessionId uint64) bool {
+	_, ok := c.cacheMap[sessionId]
+	return ok
+}
+
+func (c *CSSessionMgr) IsExistSessionOfSessID(sessionId uint64) bool {
+	_, ok := c.sessMap[sessionId]
+	return ok
+}
+
 func (c *CSSessionMgr) Update() {
+	now := getMillsecond()
+	if (c.lastUpdateTime + CsMgrUpdateTime) >= now {
+		c.lastUpdateTime = now
+
+		for sessionID, cache := range c.cacheMap {
+			if cache.connectTick < now {
+				ELog.InfoAf("[CSSessionMgr] Timeout Triggle  ConnectCache Del SesssionID=%v,Addr=%v", cache.sessionId, cache.addr)
+				delete(c.cacheMap, sessionID)
+			}
+		}
+	}
+
 	for _, session := range c.sessMap {
 		sess := session.(*CSSession)
 		if sess != nil {
@@ -113,6 +165,7 @@ func (c *CSSessionMgr) CreateSession(isListenFlag bool) ISession {
 	sess.SetCoder(c.coder)
 	sess.SetSessionFactory(c)
 	sess.SetSessionConcurrentFlag(true)
+	ELog.InfoAf("[CSSessionMgr] CreateSession SessID=%v", sess.GetSessID())
 	c.nextId++
 	return sess
 }
@@ -138,9 +191,7 @@ func (c *CSSessionMgr) GetSessionCount() int {
 }
 
 func (c *CSSessionMgr) RemoveSession(id uint64) {
-	if _, ok := c.sessMap[id]; ok {
-		delete(c.sessMap, id)
-	}
+	delete(c.sessMap, id)
 }
 
 func (c *CSSessionMgr) Count() int {
@@ -162,6 +213,13 @@ func (c *CSSessionMgr) Connect(addr string, handler ICSMsgHandler, coder ICoder)
 	c.coder = coder
 	c.handler = handler
 	sess := c.CreateSession(false)
+	cache := &CSSessionCache{
+		sessionId:   sess.GetSessID(),
+		addr:        addr,
+		connectTick: getMillsecond() + CsOnceConnectMaxTime,
+	}
+	c.cacheMap[sess.GetSessID()] = cache
+	ELog.InfoAf("[CSSessionMgr]ConnectCache Add SessionID=%v,Addr=%v", sess.GetSessID(), addr)
 	GNet.Connect(addr, sess)
 }
 
