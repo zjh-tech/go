@@ -26,6 +26,8 @@ type ICoder interface {
 	UnpackMsg(datas []byte) ([]byte, error)
 	//处理消息
 	ProcessMsg(datas []byte, sess ISession)
+	//最大包长度
+	GetPackageMaxLen() uint32
 }
 
 type ISessionOnHandler interface {
@@ -42,7 +44,6 @@ type IConnection interface {
 	GetConnID() uint64
 	GetSession() ISession
 	Start()
-	Send(datas []byte)
 	AsyncSend(datas []byte)
 	Terminate()
 }

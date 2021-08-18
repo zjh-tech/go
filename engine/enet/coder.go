@@ -88,3 +88,7 @@ func (c *Coder) PackMsg(msgId uint32, datas []byte) ([]byte, error) {
 
 	return buff.Bytes(), nil
 }
+
+func (c *Coder) GetPackageMaxLen() uint32 {
+	return PackageDefaultMaxSize
+}

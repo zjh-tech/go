@@ -91,6 +91,7 @@ func (c *CSSession) OnHandler(msgId uint32, datas []byte) {
 	}
 
 	//业务层也可以提供另外的心跳
+	ELog.InfoAf("CSSession OnHandler MsgID = %v", msgId)
 	c.handler.OnHandler(msgId, datas, c)
 	c.lastCheckBeatHeartTime = getMillsecond()
 

@@ -31,9 +31,18 @@ const (
 	MsgFail    uint32 = 1
 )
 
+const ConnWriterSleepLoopCount = 10000
+
 const (
-	NetChannelMaxSize = 1000000
-	NetMaxConnectSize = 60000
+	NetChannelMaxSize     = 10000000
+	NetMaxConnectSize     = 60000
+	ConnectChannelMaxSize = 1000000
+	PackageDefaultMaxSize = 1024 * 64
+)
+
+const (
+	IsFreeWriteState uint32 = 0
+	IsWritingState   uint32 = 1
 )
 
 func getMillsecond() int64 {

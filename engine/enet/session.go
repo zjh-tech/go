@@ -133,6 +133,12 @@ func (s *Session) AsyncSendMsg(msgId uint32, datas []byte) bool {
 	allDatas, err := s.coder.PackMsg(msgId, datas)
 	if err != nil {
 		ELog.ErrorAf("[Session] SesssionID=%v  SendMsg PackMsg Error=%v", s.GetSessID(), err)
+		return false
+	}
+
+	if len(allDatas) >= int(s.coder.GetPackageMaxLen()) {
+		ELog.ErrorAf("[Session] SesssionID=%v SendMsg MsgId=%v Out Range PackMsg Max Len", s.GetSessID(), msgId)
+		return false
 	}
 
 	ELog.DebugAf("[Net][Session] AsyncSendProtoMsg MsgId=%v,Datas=%v", msgId, datas)
