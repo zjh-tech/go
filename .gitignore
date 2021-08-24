@@ -3,12 +3,6 @@ pkg
 go.sum
 *.exe
 log
-server/bin/battleserver/battleserver
-server/bin/centerserver/centerserver
-server/bin/dbserver/dbserver
-server/bin/gatewayserver/gatewayserver
-server/bin/hallserver/hallserver
-server/bin/loginserver/loginserver
-server/bin/matchserver/matchserver
-server/bin/registryserver/registryserver
-server/bin/robot/robot
+example/tcpserver/cfg.yaml
+example/tcpclient/cfg.yaml
+
