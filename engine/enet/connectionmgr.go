@@ -19,6 +19,7 @@ func NewConnectionMgr() *ConnectionMgr {
 }
 
 func (c *ConnectionMgr) Create(net INet, netConn *net.TCPConn, sess ISession) IConnection {
+	netConn.SetNoDelay(false)
 	c.connLocker.Lock()
 	defer c.connLocker.Unlock()
 	c.nextId++

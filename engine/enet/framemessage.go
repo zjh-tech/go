@@ -43,19 +43,3 @@ type C2SSessionPing struct {
 
 type C2SSessionPong struct {
 }
-
-//--------sdk--------------
-const (
-	SDkEngineMinMsgId = 1
-
-	SDKSessionPingId = 2
-	SDKSessionPongId = 3
-
-	SDkEngineMaxMsgId = 100
-)
-
-type SDKSessionPing struct {
-}
-
-type SDKSessionPong struct {
-}

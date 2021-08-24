@@ -18,8 +18,8 @@ const (
 	SessListenType
 )
 
-//var GSendQps int64 = 0
-//var GRecvQps int64 = 0
+var GSendQps int64 = 0
+var GRecvQps int64 = 0
 
 const (
 	ConnEstablishState uint32 = iota
@@ -41,8 +41,8 @@ const (
 )
 
 const (
-	IsFreeWriteState uint32 = 0
-	IsWritingState   uint32 = 1
+	IsFreeConnectState uint32 = 0
+	IsConnectingState  uint32 = 1
 )
 
 func getMillsecond() int64 {

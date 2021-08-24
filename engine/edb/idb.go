@@ -23,5 +23,5 @@ type IMysqlConn interface {
 	CommitTransact()
 	RollbackTransact()
 
-	AddComand(command IMysqlCommand)
+	AddCommand(command IMysqlCommand)
 }

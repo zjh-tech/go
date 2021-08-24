@@ -1,18 +1,17 @@
 package edb
 
-type ExecSqlFunc func(conn IMysqlConn, attach []interface{}) (IDBResult, int32, error)
-type ExecSqlRecordFunc func(recordSet IDBResult, attach []interface{}, errorCode int32, err error)
+type ExecSqlFunc func(conn IMysqlConn, attach []interface{}) (IDBResult, error)
+type ExecSqlRecordFunc func(recordSet IDBResult, attach []interface{}, err error)
 
-type CommonCommand struct {
+type DBAsyncCommand struct {
 	execSqlFunc ExecSqlFunc
 	execRecFunc ExecSqlRecordFunc
 	attach      []interface{}
 	recordSet   IDBResult
-	errorCode   int32
 	err         error
 }
 
-func NewCommonCommand(execSqlFunc ExecSqlFunc, execRecFunc ExecSqlRecordFunc, attach []interface{}) *CommonCommand {
+func NewDBAsyncCommand(execSqlFunc ExecSqlFunc, execRecFunc ExecSqlRecordFunc, attach []interface{}) *DBAsyncCommand {
 	if execSqlFunc == nil {
 		return nil
 	}
@@ -20,50 +19,24 @@ func NewCommonCommand(execSqlFunc ExecSqlFunc, execRecFunc ExecSqlRecordFunc, at
 	if execRecFunc == nil {
 		return nil
 	}
-	return &CommonCommand{
-		execSqlFunc: execSqlFunc,
-		execRecFunc: execRecFunc,
-		attach:      attach,
-		recordSet:   nil,
-		err:         nil,
-	}
+
+	cmd := GDBAsyncCommandPool.Get().(*DBAsyncCommand)
+	cmd.execSqlFunc = execSqlFunc
+	cmd.execRecFunc = execRecFunc
+	cmd.attach = attach
+	cmd.recordSet = nil
+	cmd.err = nil
+	return cmd
 }
 
-func (c *CommonCommand) SetAttach(datas []interface{}) {
-	c.attach = datas
+func (d *DBAsyncCommand) SetAttach(datas []interface{}) {
+	d.attach = datas
 }
 
-func (c *CommonCommand) OnExecuteSql(conn IMysqlConn) {
-	c.recordSet, c.errorCode, c.err = c.execSqlFunc(conn, c.attach)
+func (d *DBAsyncCommand) OnExecuteSql(conn IMysqlConn) {
+	d.recordSet, d.err = d.execSqlFunc(conn, d.attach)
 }
 
-func (c *CommonCommand) OnExecuted() {
-	c.execRecFunc(c.recordSet, c.attach, c.errorCode, c.err)
-}
-
-//---------------------------------------------------------------------------------------------------------
-type SyncCommonCommand struct {
-	sql       string
-	queryFlag bool
-	recordSet IDBResult
-	err       error
-}
-
-func NewSyncCommonCommand(sql string, queryFlag bool) *SyncCommonCommand {
-	return &SyncCommonCommand{
-		sql:       sql,
-		queryFlag: queryFlag,
-	}
-}
-
-func (c *SyncCommonCommand) OnExecuteSql(conn IMysqlConn) {
-	if c.queryFlag {
-		c.recordSet, c.err = conn.QuerySqlOpt(c.sql)
-	} else {
-		c.recordSet, c.err = conn.NonQuerySqlOpt(c.sql)
-	}
-}
-
-func (c *SyncCommonCommand) GetExecuteSqlResult() (IDBResult, error) {
-	return c.recordSet, c.err
+func (d *DBAsyncCommand) OnExecuted() {
+	d.execRecFunc(d.recordSet, d.attach, d.err)
 }

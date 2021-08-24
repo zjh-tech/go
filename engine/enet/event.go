@@ -38,9 +38,9 @@ func (t *TcpEvent) ProcessMsg() bool {
 		datas := t.datas.([]byte)
 		session.GetCoder().ProcessMsg(datas, session)
 	} else if t.eventType == ConnCloseType {
+		session.SetConnection(nil)
 		GConnectionMgr.Remove(t.conn.GetConnID())
 		session.OnTerminate()
-		session.SetConnection(nil)
 	}
 	return true
 }

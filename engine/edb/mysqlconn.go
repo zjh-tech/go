@@ -18,33 +18,35 @@ type MysqlConn struct {
 	exitChan chan struct{}
 
 	sqlTx *sql.Tx
+
+	dbmodule *DBModule
 }
 
-func newMysqlConn(name string) *MysqlConn {
+func newMysqlConn(name string, dbmodule *DBModule) *MysqlConn {
 	conn := &MysqlConn{
 		name:     name,
 		cmdQueue: make(chan IMysqlCommand, DbWaitChanSize),
 		exitChan: make(chan struct{}),
 		sqlTx:    nil,
 		sqlDb:    nil,
+		dbmodule: dbmodule,
 	}
 
 	return conn
 }
 
 func (m *MysqlConn) connect(dsn string) error {
-	sqlDb, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return err
-	}
-
-	err = sqlDb.Ping()
-	if err != nil {
-		return err
-	}
-
-	m.sqlDb = sqlDb
 	m.dsn = dsn
+
+	if sqlDb, err := sql.Open("mysql", dsn); err != nil {
+		return err
+	} else {
+		m.sqlDb = sqlDb
+	}
+
+	if err := m.sqlDb.Ping(); err != nil {
+		return err
+	}
 
 	m.sqlDb.SetMaxOpenConns(1)
 	m.sqlDb.SetConnMaxLifetime(0)
@@ -53,7 +55,7 @@ func (m *MysqlConn) connect(dsn string) error {
 	return nil
 }
 
-func (m *MysqlConn) AddComand(command IMysqlCommand) {
+func (m *MysqlConn) AddCommand(command IMysqlCommand) {
 	m.cmdQueue <- command
 }
 
@@ -67,7 +69,7 @@ func (m *MysqlConn) run() {
 				}
 
 				cmd.OnExecuteSql(m)
-				GDBModule.AddExecutedCommand(cmd)
+				m.dbmodule.AddExecutedCommand(cmd)
 			case <-m.exitChan:
 				ELog.InfoAf("Name %v MysqlConn Exit", m.name)
 				return

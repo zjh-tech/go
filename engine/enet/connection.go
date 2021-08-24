@@ -1,6 +1,7 @@
 package enet
 
 import (
+	"bufio"
 	"io"
 	"net"
 	"sync/atomic"
@@ -15,7 +16,6 @@ type Connection struct {
 	exitChan    chan struct{}
 	session     ISession
 	state       uint32
-	writeState  uint32
 }
 
 func NewConnection(connId uint64, net INet, conn *net.TCPConn, sess ISession) *Connection {
@@ -28,7 +28,6 @@ func NewConnection(connId uint64, net INet, conn *net.TCPConn, sess ISession) *C
 		msgBuffChan: make(chan []byte, ConnectChannelMaxSize),
 		exitChan:    make(chan struct{}),
 		state:       ConnEstablishState,
-		writeState:  IsFreeWriteState,
 	}
 }
 
@@ -36,11 +35,20 @@ func (c *Connection) GetConnID() uint64 {
 	return c.connId
 }
 
-func (c *Connection) StartWriter() {
+func (c *Connection) writerGoroutine() {
 	ELog.InfoAf("[Net][Connection] ConnID=%v Write Goroutine Start", c.connId)
 
 	defer c.close(false)
+	ioWriter := bufio.NewWriter(c.conn)
+	var err error
 	for {
+		if len(c.msgBuffChan) == 0 && ioWriter.Buffered() != 0 {
+			if err = ioWriter.Flush(); err != nil {
+				ELog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Exit Flush Error=%v", c.connId, err)
+				return
+			}
+		}
+
 		select {
 		case datas, ok := <-c.msgBuffChan:
 			if !ok {
@@ -50,87 +58,30 @@ func (c *Connection) StartWriter() {
 
 			ELog.DebugAf("[Net][Connection] Write ConnID=%v,Len=%v", c.connId, len(datas))
 
-			if _, err := c.conn.Write(datas); err != nil {
-				ELog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Exit SendBuffError=%v", c.connId, err)
+			if _, err = ioWriter.Write(datas); err != nil {
+				ELog.ErrorAf("[Net][Connection] ConnID=%v bufio Write Goroutine Exit Error=%v", c.connId, err)
 				return
 			}
+			atomic.AddInt64(&GSendQps, 1)
 		case <-c.exitChan:
 			{
-				ELog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine  Exit", c.connId)
+				ELog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Exit", c.connId)
 				return
 			}
 		}
 	}
 }
 
-func (c *Connection) DoWriter() {
-	ELog.DebugAf("[Net][Connection] ConnID=%v DoWriter Start", c.connId)
+func (c *Connection) readerGoroutine() {
+	ELog.InfoAf("[Net][Connection] ConnID=%v Read Goroutine Start", c.connId)
+
 	defer func() {
-		ELog.DebugAf("[Net][Connection] ConnID=%v DoWriter End", c.connId)
-		atomic.CompareAndSwapUint32(&c.writeState, IsWritingState, IsFreeWriteState)
+		ELog.InfoAf("[Net][Connection] ConnID=%v Read Goroutine Exit", c.connId)
+		c.close(false)
 	}()
 
-	coder := c.session.GetCoder()
-	packMaxLen := int(coder.GetPackageMaxLen())
-	mixBuff := make([]byte, packMaxLen*2)
-	mixIndex := 0
-	i := 0
-	totalCount := 0
 	for {
-		mixIndex = 0
-		i = 0
-		loopCount := len(c.msgBuffChan)
-		if loopCount == 0 {
-			//server 2 unity return
-			return
-		}
-
-		if totalCount == ConnWriterSleepLoopCount {
-			//server 2 server sleep
-			totalCount = 0
-			time.Sleep(1 * time.Microsecond)
-		}
-	loop:
-		for ; i < loopCount; i++ {
-			select {
-			case datas, ok := <-c.msgBuffChan:
-				if !ok {
-					ELog.ErrorAf("[Net][Connection] Write Goroutine ConnID=%v MsgBuffChan Ok Error", c.connId)
-					return
-				}
-				totalCount++
-				dataLen := len(datas)
-				//session send : ensure len datas < packMaxLen
-				mixIndex += copy(mixBuff[mixIndex:], datas)
-				ELog.DebugAf("[Net][Connection] Write Goroutine ConnID=%v,CopyLen=%v To MixBuff", c.connId, dataLen)
-
-				if mixIndex >= packMaxLen {
-					ELog.DebugAf("[Net][Connection] Write Goroutine ConnID=%v,Out Range MixBuff Len MixIndex=%v", c.connId, mixIndex)
-					break loop
-				}
-			default:
-				break loop
-			}
-		}
-
-		if mixIndex != 0 {
-			if _, err := c.conn.Write(mixBuff[0:mixIndex]); err != nil {
-				ELog.ErrorAf("[Net][Connection] ConnID=%v Write Goroutine Exit Send Error=%v", c.connId, err)
-				c.close(false)
-				return
-			}
-			ELog.DebugAf("[Net][Connection] Write Goroutine ConnID=%v,Conn.Write MixIndex=%v", c.connId, mixIndex)
-		}
-	}
-}
-
-func (c *Connection) StartReader() {
-	ELog.InfoAf("[Net][Connection] ConnID=%v Read Goroutine Start", c.connId)
-	defer c.close(false)
-
-	for {
-		if atomic.LoadUint32(&c.state) == ConnClosedState {
-			ELog.InfoAf("[Net][Connection] ConnID=%v Read Goroutine Exit", c.connId)
+		if atomic.LoadUint32(&c.state) != ConnEstablishState {
 			return
 		}
 
@@ -171,7 +122,7 @@ func (c *Connection) StartReader() {
 			c.net.PushEvent(msgEvent)
 		}
 
-		//atomic.AddInt64(&GRecvQps, 1)
+		atomic.AddInt64(&GRecvQps, 1)
 	}
 }
 
@@ -185,8 +136,8 @@ func (c *Connection) Start() {
 		c.net.PushEvent(establishEvent)
 	}
 
-	go c.StartReader()
-	//go c.StartWriter()
+	go c.readerGoroutine()
+	go c.writerGoroutine()
 }
 
 func (c *Connection) Terminate() {
@@ -198,10 +149,8 @@ func (c *Connection) close(terminate bool) {
 		return
 	}
 
-	closeEvent := NewTcpEvent(ConnCloseType, c, terminate)
-	if c.session.GetSessionConcurrentFlag() {
-		c.session.PushEvent(closeEvent)
-	} else {
+	if !c.session.GetSessionConcurrentFlag() {
+		closeEvent := NewTcpEvent(ConnCloseType, c, nil)
 		c.net.PushEvent(closeEvent)
 	}
 
@@ -244,6 +193,10 @@ func (c *Connection) onClose() {
 		c.exitChan <- struct{}{} //close writer Goroutine
 		c.conn.Close()           //close reader Goroutine
 	}
+
+	if c.session.GetSessionConcurrentFlag() {
+		c.session.StopSessionConcurrentGoroutine()
+	}
 }
 
 func (c *Connection) AsyncSend(datas []byte) {
@@ -253,12 +206,6 @@ func (c *Connection) AsyncSend(datas []byte) {
 	}
 
 	c.msgBuffChan <- datas
-
-	if atomic.CompareAndSwapUint32(&c.writeState, IsFreeWriteState, IsWritingState) {
-		go c.DoWriter()
-	}
-
-	//atomic.AddInt64(&GSendQps, 1)
 }
 
 func (c *Connection) GetSession() ISession {

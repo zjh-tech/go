@@ -102,7 +102,7 @@ func (s *SSSession) OnEstablish() {
 
 		datas, marshalErr := json.Marshal(req)
 		if marshalErr == nil {
-			s.AsyncSendMsg(S2SSessionVerifyReqId, datas)
+			s.SendMsg(S2SSessionVerifyReqId, datas)
 		}
 		return
 	}
@@ -130,7 +130,7 @@ func (s *SSSession) Update() {
 	if s.IsConnectType() {
 		if (s.lastSendBeatHeartTime + SSBeatSendHeartTime) >= now {
 			s.lastSendBeatHeartTime = now
-			s.AsyncSendMsg(S2SSessionPingId, nil)
+			s.SendMsg(S2SSessionPingId, nil)
 			ELog.DebugAf("[SSSession] Remote [ID=%v,Type=%v,Ip=%v] Send Ping", s.remoteSpec.ServerID, s.remoteSpec.ServerType, s.remoteSpec.Ip)
 		}
 	}
@@ -165,7 +165,7 @@ func (s *SSSession) OnHandler(msgId uint32, datas []byte) {
 				s.Terminate()
 				return
 			}
-			s.AsyncSendMsg(S2SSessionVerifyResId, nil)
+			s.SendMsg(S2SSessionVerifyResId, nil)
 		}
 
 		factory := s.GetSessionFactory()
@@ -205,7 +205,7 @@ func (s *SSSession) OnHandler(msgId uint32, datas []byte) {
 	if msgId == S2SSessionPingId && s.IsListenType() {
 		ELog.DebugAf("[SSSession] Remote [ID=%v,Type=%v,Ip=%v] Recv Ping Send Pong", s.remoteSpec.ServerID, s.remoteSpec.ServerType, s.remoteSpec.Ip)
 		s.lastCheckBeatHeartTime = getMillsecond()
-		s.AsyncSendMsg(S2SSessionPongId, nil)
+		s.SendMsg(S2SSessionPongId, nil)
 		return
 	}
 
@@ -363,7 +363,7 @@ func (s *SSSessionMgr) SendMsg(serverId uint64, msgId uint32, datas []byte) {
 	for _, session := range s.sessMap {
 		serversess := session.(*SSSession)
 		if serversess.remoteSpec.ServerID == serverId {
-			serversess.AsyncSendMsg(msgId, datas)
+			serversess.SendMsg(msgId, datas)
 			return
 		}
 	}
@@ -377,7 +377,7 @@ func (s *SSSessionMgr) SendProtoMsg(serverId uint64, msgId uint32, msg proto.Mes
 	for _, session := range s.sessMap {
 		serversess := session.(*SSSession)
 		if serversess.remoteSpec.ServerID == serverId {
-			serversess.AsyncSendProtoMsg(msgId, msg)
+			serversess.SendProtoMsg(msgId, msg)
 			return true
 		}
 	}
@@ -388,7 +388,7 @@ func (s *SSSessionMgr) SendProtoMsg(serverId uint64, msgId uint32, msg proto.Mes
 func (s *SSSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgId uint32, msg proto.Message) bool {
 	serversess, ok := s.sessMap[sessionID]
 	if ok {
-		return serversess.AsyncSendProtoMsg(msgId, msg)
+		return serversess.SendProtoMsg(msgId, msg)
 	}
 
 	return false
@@ -398,7 +398,7 @@ func (s *SSSessionMgr) BroadMsg(serverType uint32, msgId uint32, datas []byte) {
 	for _, session := range s.sessMap {
 		serversess := session.(*SSSession)
 		if serversess.GetRemoteServerType() == serverType {
-			serversess.AsyncSendMsg(msgId, datas)
+			serversess.SendMsg(msgId, datas)
 		}
 	}
 }
@@ -407,7 +407,7 @@ func (s *SSSessionMgr) BroadProtoMsg(serverType uint32, msgId uint32, msg proto.
 	for _, session := range s.sessMap {
 		serversess := session.(*SSSession)
 		if serversess.GetRemoteServerType() == serverType {
-			serversess.AsyncSendProtoMsg(msgId, msg)
+			serversess.SendProtoMsg(msgId, msg)
 		}
 	}
 }
@@ -456,7 +456,7 @@ func (s *SSSessionMgr) SSServerConnect(verifySpec VerifySessionSpec, remoteSepc 
 }
 
 func (s *SSSessionMgr) SSServerListen(addr string) bool {
-	return GNet.Listen(addr, s, math.MaxInt32)
+	return GNet.Listen(addr, s, math.MaxInt32, false)
 }
 
 var GSSSessionMgr *SSSessionMgr

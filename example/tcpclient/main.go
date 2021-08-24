@@ -1,12 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/zjh-tech/go-frame/engine/elog"
 	"github.com/zjh-tech/go-frame/engine/enet"
-	"github.com/zjh-tech/go-frame/engine/etimer"
-	"github.com/zjh-tech/go-frame/frame"
 )
 
 type TcpClient struct {
@@ -14,20 +13,28 @@ type TcpClient struct {
 }
 
 func (t *TcpClient) Init() bool {
-	t.logger = elog.NewLogger("./log", 0)
+	cfgPath := "./cfg.yaml"
+	cfg, err := ReadCfg(cfgPath)
+	if err != nil {
+		fmt.Printf("ReadCfg Error=%v", err)
+		return false
+	}
+
+	GCfg = cfg
+
+	t.logger = elog.NewLogger(GCfg.LogInfo.Path, GCfg.LogInfo.Level)
 	t.logger.Init()
 	ELog.SetLogger(t.logger)
-
-	ELog.Info("TcpClient Log System Init Success")
+	enet.ELog.SetLogger(t.logger)
 
 	if !enet.GNet.Init() {
 		ELog.Error("TcpClient Net Init Error")
 		return false
 	}
-	ELog.Info("TcpClient Net Init Success")
 
-	for i := 0; i < 5; i++ {
-		enet.GCSSessionMgr.Connect("127.0.0.1:2000", GClientMsgHandler, nil)
+	enet.GCSSessionMgr = enet.NewCSSessionMgr()
+	for i := 0; i < GCfg.ClientCount; i++ {
+		enet.GCSSessionMgr.Connect(GCfg.TcpInfo.Addr, GClientMsgHandler, nil, true)
 	}
 
 	ELog.Info("TcpClient Init Success")
@@ -35,19 +42,9 @@ func (t *TcpClient) Init() bool {
 }
 
 func (t *TcpClient) Run() {
-	net_module := enet.GNet
-	timer_module := etimer.GTimerMgr
 	busy := false
 	for {
 		busy = false
-
-		if net_module.Run(frame.NetLoopCount) {
-			busy = true
-		}
-
-		if timer_module.Update(frame.TimerLoopCount) {
-			busy = true
-		}
 
 		if !busy {
 			time.Sleep(1 * time.Millisecond)

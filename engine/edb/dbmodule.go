@@ -3,6 +3,7 @@ package edb
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -30,10 +31,15 @@ func (d *DBModule) Init(connMaxCount uint64, dbTableMaxCount uint64, connSpecs [
 	for i := uint64(0); i < d.connMaxCount; i++ {
 		dbNameSlices := strings.Split(d.connSpecs[i].Name, "_")
 		if len(dbNameSlices) != 2 {
-			return errors.New("[DBModule] Mysql Sub Database and sub Table must is _ split as logindb_0 accountverify_00 Error")
+			return errors.New("[DBModule] Mysql Database must is _ split as logindb_0 Error")
 		}
 
-		dbIndex, _ := Str2Uint64(dbNameSlices[1])
+		//string to uint64
+		dbIndex, err := strconv.ParseUint(dbNameSlices[1], 10, 64)
+		if err != nil {
+			return errors.New("[DBModule] Mysql Database after _ must is number as logindb_0 Error")
+		}
+
 		if connErr := d.connect(dbIndex, d.connSpecs[i].Name, d.connSpecs[i].Host, d.connSpecs[i].Port, d.connSpecs[i].User, d.connSpecs[i].Password, d.connSpecs[i].Charset); connErr != nil {
 			return connErr
 		}
@@ -54,7 +60,7 @@ func (d *DBModule) connect(dbIndex uint64, dbName string, host string, port uint
 
 	dsn := fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=%s", user, password, "tcp", host, port, dbName, charset)
 	name := dbName
-	mysqlConn := newMysqlConn(name)
+	mysqlConn := newMysqlConn(name, d)
 	if err := mysqlConn.connect(dsn); err != nil {
 		return err
 	}
@@ -75,43 +81,55 @@ func (d *DBModule) HashDBIndex(uid uint64) uint64 {
 
 func (d *DBModule) HashTableIndex(uid uint64) uint64 {
 	dbIndex := d.HashDBIndex(uid)
-	db_table_index := uid % d.dbTableMaxCount
-	ELog.DebugAf("[DBModule] UID=%v Hash TableIndex=%v", uid, db_table_index*10+dbIndex)
-	return db_table_index*10 + dbIndex
+	dbTableIndex := uid % d.dbTableMaxCount
+	ELog.DebugAf("[DBModule] UID=%v Hash TableIndex=%v", uid, dbTableIndex*10+dbIndex)
+	return dbTableIndex*10 + dbIndex
 }
 
-func (d *DBModule) GetTableNameByUID(table_name string, uid uint64) string {
-	table_index := d.HashTableIndex(uid)
-	return fmt.Sprintf("%v_%02d", table_name, table_index)
+func (d *DBModule) GetTableNameByUID(tableName string, uid uint64) string {
+	tableIndex := d.HashTableIndex(uid)
+	return fmt.Sprintf("%v_%02d", tableName, tableIndex)
 }
 
-//async function
-func (d *DBModule) AddCommand(uid uint64, command IMysqlCommand) bool {
+func (d *DBModule) SyncQuerySqlOpt(sql string, uid uint64) (IDBResult, error) {
+	return d.syncSqlOpt(sql, uid, true)
+}
+
+func (d *DBModule) SyncNonQuerySqlOpt(sql string, uid uint64) (IDBResult, error) {
+	return d.syncSqlOpt(sql, uid, false)
+}
+
+func (d *DBModule) syncSqlOpt(sql string, uid uint64, queryFlag bool) (IDBResult, error) {
+	dbIndex := d.HashDBIndex(uid)
+	conn, ok := d.conns[dbIndex]
+	if !ok {
+		message := fmt.Sprintf("Mysql SyncNonQuerySql GetMysqlConn Error Uid=%v", uid)
+		ELog.ErrorAf(message)
+		return nil, errors.New(message)
+	}
+
+	if queryFlag {
+		return conn.QuerySqlOpt(sql)
+	} else {
+		return conn.NonQuerySqlOpt(sql)
+	}
+}
+
+func (d *DBModule) AsyncDoSqlOpt(execSql ExecSqlFunc, execRec ExecSqlRecordFunc, attach []interface{}, uid uint64) {
+	command := NewDBAsyncCommand(execSql, execRec, attach)
 	if command == nil {
-		ELog.ErrorAf("[DBModule] Mysql UId=%v AddCommand Command Is Nil", uid)
-		return false
+		ELog.ErrorAf("Mysql SyncDoSqlOpt NewCommonCommand Error Uid=%v", uid)
+		return
 	}
 
 	dbIndex := d.HashDBIndex(uid)
 	conn, ok := d.conns[dbIndex]
 	if !ok {
 		ELog.ErrorAf("[DBModule] Mysql UId=%v DBIndex=%v Group Is Not Exist", uid, dbIndex)
-		return false
+		return
 	}
 
-	conn.AddComand(command)
-	return true
-}
-
-func (d *DBModule) GetMysqlConn(uid uint64) IMysqlConn {
-	dbIndex := d.HashDBIndex(uid)
-	conn, ok := d.conns[dbIndex]
-	if !ok {
-		ELog.ErrorAf("Mysql  UId=%v DBIndex=%v  Is Not Exist", uid, dbIndex)
-		return nil
-	}
-
-	return conn
+	conn.AddCommand(command)
 }
 
 func (d *DBModule) AddExecutedCommand(command IMysqlCommand) {
@@ -119,7 +137,8 @@ func (d *DBModule) AddExecutedCommand(command IMysqlCommand) {
 }
 
 func (d *DBModule) Run(loopCount int) bool {
-	for i := 0; i < loopCount; i++ {
+	i := 0
+	for ; i < loopCount; i++ {
 		select {
 		case cmd, ok := <-d.executedQueue:
 			if !ok {

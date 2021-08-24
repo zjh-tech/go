@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -133,11 +134,12 @@ func (l *Logger) startWriterGoroutine() {
 				return
 			}
 			select {
-			case buffEvent := <-l.buffEvents:
-				l.outPut(buffEvent.level, buffEvent.content, buffEvent.file, buffEvent.line)
-
-			case event := <-l.events:
-				l.outPut(event.level, event.content, event.file, event.line)
+			case evt := <-l.buffEvents:
+				l.outPut(evt.level, evt.content, evt.file, evt.line)
+				GLogEventPool.Put(evt)
+			case evt := <-l.events:
+				l.outPut(evt.level, evt.content, evt.file, evt.line)
+				GLogEventPool.Put(evt)
 			case <-l.exitChan:
 				l.exitChan = nil
 				exit = true
@@ -168,12 +170,11 @@ func (l *Logger) addEvent(level int, content string, async bool) {
 		partFileName = file[index+1 : fileLen]
 	}
 
-	event := &LogEvent{
-		level:   level,
-		content: content,
-		file:    partFileName,
-		line:    line,
-	}
+	event := GLogEventPool.Get().(*LogEvent)
+	event.level = level
+	event.content = content
+	event.file = partFileName
+	event.line = line
 
 	if async {
 		l.buffEvents <- event
@@ -188,11 +189,16 @@ func (l *Logger) outPut(level int, content string, file string, line int) {
 	l.ensureFileExist(now)
 	l.lastTime = now
 
-	//add time
-	nowStr := time.Now().Format("2006-01-02 15:04:05")
-	//add file line
-	allContent := fmt.Sprintf("%s [%s] [%s:%d] %s", nowStr, loglevels[level], file, line, content)
-	l.buf.WriteString(allContent)
+	//example: 2021-08-18 19:55:21 [INFO] [benchmark.go192] Benchmark Info
+	l.buf.WriteString(now.Format("2006-01-02 15:04:05"))
+	l.buf.WriteByte(' ')
+	l.buf.WriteString(loglevels[level])
+	l.buf.WriteString(" [")
+	l.buf.WriteString(file)
+	l.buf.WriteString(strconv.Itoa(line))
+	l.buf.WriteString("] ")
+	l.buf.WriteString(content)
+
 	//add \n
 	if len(content) > 0 && content[len(content)-1] != '\n' {
 		l.buf.WriteByte('\n')

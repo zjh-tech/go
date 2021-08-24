@@ -1,0 +1,11 @@
+log:
+    path: "./log"
+    level: 0
+
+tcp:
+  addr:  "10.24.10.13:1014"  
+  maxconncount: 3000   
+  openoverload: 0
+  intervaltime: 10
+  limit: 1000
+

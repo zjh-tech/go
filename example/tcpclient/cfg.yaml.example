@@ -1,0 +1,11 @@
+log:
+    path: "./log"
+    level: 0
+
+tcp:
+  addr:  "127.0.0.1:1010"  
+
+clientCount: 5
+loopCount: 100000
+
+

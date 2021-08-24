@@ -3,6 +3,7 @@ package enet
 import (
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 )
 
@@ -15,9 +16,10 @@ type Net struct {
 	evtQueue     IEventQueue
 	httpEvtQueue IEventQueue
 	connQueue    chan ConnEvent
+	connState    uint32
 }
 
-func newNet(maxEvtCount uint32, maxConnCount uint32) *Net {
+func NewNet(maxEvtCount uint32, maxConnCount uint32) *Net {
 	return &Net{
 		evtQueue:     newEventQueue(maxEvtCount),
 		httpEvtQueue: newEventQueue(maxConnCount),
@@ -26,33 +28,12 @@ func newNet(maxEvtCount uint32, maxConnCount uint32) *Net {
 }
 
 func (n *Net) Init() bool {
-	go func() {
-		for {
-			select {
-			case evt := <-n.connQueue:
-				addr, err := net.ResolveTCPAddr("tcp4", evt.addr)
-				if err != nil {
-					ELog.Errorf("[Net] Connect Addr=%v ResolveTCPAddr Error=%v", addr, err)
-					continue
-				}
-
-				netConn, dial_err := net.DialTCP("tcp4", nil, addr)
-				if dial_err != nil {
-					ELog.Errorf("[Net] Connect Addr=%v DialTCP Error=%v", addr, dial_err)
-					continue
-				}
-
-				conn := GConnectionMgr.Create(n, netConn, evt.sess)
-				go conn.Start()
-			}
-		}
-	}()
-
+	ELog.Info("[Net] Init")
 	return true
 }
 
 func (n *Net) UnInit() {
-	ELog.Info("[Net] Stop")
+	ELog.Info("[Net] UnInit")
 }
 
 func (n *Net) PushEvent(evt IEvent) {
@@ -67,7 +48,7 @@ func (n *Net) PushMultiHttpEvent(httpEvt IHttpEvent) {
 	httpEvt.ProcessMsg()
 }
 
-func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int) bool {
+func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int, sessionConcurrentFlag bool) bool {
 	ELog.Infof("[Net] Start ListenTCP Addr=%v", addr)
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", addr)
 	if err != nil {
@@ -87,7 +68,7 @@ func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int) b
 
 	ELog.Infof("[Net] Addr=%v ListenTCP Success", tcpAddr)
 
-	go func(sessfactory ISessionFactory, listen *net.TCPListener, listenMaxCount int) {
+	go func(n *Net, sessfactory ISessionFactory, listen *net.TCPListener, listenMaxCount int, sessionConcurrentFlag bool) {
 		for {
 			netConn, acceptErr := listen.AcceptTCP()
 			if acceptErr != nil {
@@ -109,11 +90,15 @@ func (n *Net) Listen(addr string, factory ISessionFactory, listenMaxCount int) b
 				continue
 			}
 
+			if sessionConcurrentFlag {
+				session.SetSessionConcurrentFlag(true)
+			}
+
 			conn := GConnectionMgr.Create(n, netConn, session)
 			session.SetConnection(conn)
 			go conn.Start()
 		}
-	}(factory, listen, listenMaxCount)
+	}(n, factory, listen, listenMaxCount, sessionConcurrentFlag)
 
 	return true
 }
@@ -125,6 +110,40 @@ func (n *Net) Connect(addr string, sess ISession) {
 	}
 	ELog.InfoAf("[Net] Connect Addr=%v In ConnQueue", addr)
 	n.connQueue <- connEvt
+
+	if atomic.CompareAndSwapUint32(&n.connState, IsFreeConnectState, IsConnectingState) {
+		go n.doConnectGoroutine()
+	}
+}
+
+func (n *Net) doConnectGoroutine() {
+	ELog.Info("[Net] doConnect Goroutine Start")
+	defer func() {
+		ELog.Info("[Net] doConnect Goroutine Exit")
+		atomic.CompareAndSwapUint32(&n.connState, IsConnectingState, IsFreeConnectState)
+	}()
+
+	for {
+		select {
+		case evt := <-n.connQueue:
+			addr, err := net.ResolveTCPAddr("tcp4", evt.addr)
+			if err != nil {
+				ELog.Errorf("[Net] Connect Addr=%v ResolveTCPAddr Error=%v", addr, err)
+				continue
+			}
+
+			netConn, dial_err := net.DialTCP("tcp4", nil, addr)
+			if dial_err != nil {
+				ELog.Errorf("[Net] Connect Addr=%v DialTCP Error=%v", addr, dial_err)
+				continue
+			}
+
+			conn := GConnectionMgr.Create(n, netConn, evt.sess)
+			go conn.Start()
+		default:
+			return
+		}
+	}
 }
 
 func (n *Net) Run(loopCount int) bool {
@@ -165,5 +184,5 @@ func (n *Net) Update() {
 var GNet *Net
 
 func init() {
-	GNet = newNet(NetChannelMaxSize, NetMaxConnectSize)
+	GNet = NewNet(NetChannelMaxSize, NetMaxConnectSize)
 }

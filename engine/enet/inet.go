@@ -11,7 +11,7 @@ type INet interface {
 	PushSingleHttpEvent(IHttpEvent)
 	PushMultiHttpEvent(IHttpEvent)
 	Connect(addr string, sess ISession)
-	Listen(addr string, factory ISessionFactory, listenMaxCount int) bool
+	Listen(addr string, factory ISessionFactory, listenMaxCount int, sessionConcurrentFlag bool) bool
 	Run(loopCount int) bool
 }
 
@@ -67,6 +67,8 @@ type ISession interface {
 
 	StartSessionConcurrentGoroutine()
 
+	StopSessionConcurrentGoroutine()
+
 	PushEvent(IEvent)
 
 	SetConnection(conn IConnection)
@@ -95,9 +97,9 @@ type ISession interface {
 
 	GetSessionFactory() ISessionFactory
 
-	AsyncSendMsg(msgId uint32, datas []byte) bool
+	SendMsg(msgId uint32, datas []byte) bool
 
-	AsyncSendProtoMsg(msgId uint32, msg proto.Message) bool
+	SendProtoMsg(msgId uint32, msg proto.Message) bool
 
 	Terminate()
 

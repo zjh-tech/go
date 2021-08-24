@@ -90,7 +90,6 @@ func asSqlString(src interface{}) string {
 		escape_string_sql := escapeString(v)
 		addSingleQuotesString(&buf, escape_string_sql)
 		return buf.String()
-
 	case []byte:
 		var buf bytes.Buffer
 		buf.Write(v)
@@ -119,7 +118,7 @@ type DBField struct {
 
 func NewDBField() *DBField {
 	return &DBField{
-		Fileds: make([]string, 0, 0),
+		Fileds: make([]string, 0),
 	}
 }
 
@@ -144,6 +143,7 @@ func (d *DBFieldPair) Add(key string, value interface{}) {
 
 func GetSelectSQL(tbl string, selects *DBField, wheres *DBFieldPair) string {
 	var buf bytes.Buffer
+
 	buf.WriteString("SELECT ")
 
 	if selects == nil {
@@ -215,6 +215,7 @@ func GetInsertSQL(tbl string, inserts *DBFieldPair) string {
 
 func GetUpdateSQL(tbl string, updates *DBFieldPair, wheres *DBFieldPair) string {
 	var buf bytes.Buffer
+
 	buf.WriteString("UPDATE ")
 	buf.WriteString(tbl)
 	buf.WriteString(" SET ")
@@ -251,6 +252,7 @@ func GetUpdateSQL(tbl string, updates *DBFieldPair, wheres *DBFieldPair) string 
 
 func GetDeleteSQL(tbl string, wheres *DBFieldPair) string {
 	var buf bytes.Buffer
+
 	buf.WriteString("DELETE FROM ")
 	buf.WriteString(tbl)
 
@@ -274,6 +276,7 @@ func GetDeleteSQL(tbl string, wheres *DBFieldPair) string {
 
 func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) string {
 	var buf bytes.Buffer
+
 	buf.WriteString("INSERT INTO ")
 	buf.WriteString(tbl)
 	buf.WriteString(" ( ")
@@ -314,7 +317,7 @@ func GetInsertOrUpdateSQL(tbl string, updates *DBFieldPair, keys *DBField) strin
 				}
 			}
 
-			if key_exist_flag == true {
+			if key_exist_flag {
 				continue
 			}
 
@@ -347,7 +350,7 @@ func BuildSelectSQL(tbl string, selects []string, wheres map[string]interface{})
 	}
 
 	var wheresmap *DBFieldPair
-	if wheres != nil && len(wheres) > 0 {
+	if wheres != nil {
 		wheresmap = NewDBFieldPair()
 		for k, v := range wheres {
 			wheresmap.Add(k, v)
@@ -373,7 +376,7 @@ func BuildUpdateSQL(tbl string, updates map[string]interface{}, wheres map[strin
 	}
 
 	var wheresmap *DBFieldPair
-	if wheres != nil && len(wheres) > 0 {
+	if wheres != nil {
 		wheresmap = NewDBFieldPair()
 		for k, v := range wheres {
 			wheresmap.Add(k, v)

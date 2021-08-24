@@ -66,7 +66,7 @@ func (c *CSSession) Update() {
 		if (c.lastSendBeatHeartTime + C2SSendBeatHeartTime) >= now {
 			c.lastSendBeatHeartTime = now
 			ELog.DebugAf("[CSSession] SessID=%v Send Beat Heart", c.GetSessID())
-			c.AsyncSendMsg(C2SSessionPingId, nil)
+			c.SendMsg(C2SSessionPingId, nil)
 		}
 	}
 }
@@ -82,7 +82,7 @@ func (c *CSSession) OnHandler(msgId uint32, datas []byte) {
 	if msgId == C2SSessionPingId {
 		ELog.DebugAf("[CSSession] SessionID=%v RECV PING SEND PONG", c.GetSessID())
 		c.lastCheckBeatHeartTime = getMillsecond()
-		c.AsyncSendMsg(C2SSessionPongId, nil)
+		c.SendMsg(C2SSessionPongId, nil)
 		return
 	} else if msgId == C2SSessionPongId {
 		ELog.DebugAf("[CSSession] SessionID=%v RECV  PONG", c.GetSessID())
@@ -91,7 +91,7 @@ func (c *CSSession) OnHandler(msgId uint32, datas []byte) {
 	}
 
 	//业务层也可以提供另外的心跳
-	ELog.InfoAf("CSSession OnHandler MsgID = %v", msgId)
+	ELog.DebugAf("CSSession OnHandler MsgID = %v", msgId)
 	c.handler.OnHandler(msgId, datas, c)
 	c.lastCheckBeatHeartTime = getMillsecond()
 
@@ -165,7 +165,7 @@ func (c *CSSessionMgr) CreateSession(isListenFlag bool) ISession {
 	sess.SetSessID(c.nextId)
 	sess.SetCoder(c.coder)
 	sess.SetSessionFactory(c)
-	sess.SetSessionConcurrentFlag(true)
+
 	ELog.InfoAf("[CSSessionMgr] CreateSession SessID=%v", sess.GetSessID())
 	c.nextId++
 	return sess
@@ -202,11 +202,11 @@ func (c *CSSessionMgr) Count() int {
 func (c *CSSessionMgr) SendProtoMsgBySessionID(sessionID uint64, msgId uint32, msg proto.Message) {
 	serversess, ok := c.sessMap[sessionID]
 	if ok {
-		serversess.AsyncSendProtoMsg(msgId, msg)
+		serversess.SendProtoMsg(msgId, msg)
 	}
 }
 
-func (c *CSSessionMgr) Connect(addr string, handler ICSMsgHandler, coder ICoder) {
+func (c *CSSessionMgr) Connect(addr string, handler ICSMsgHandler, coder ICoder, sessionConcurrentFlag bool) {
 	if coder == nil {
 		coder = NewCoder()
 	}
@@ -214,6 +214,10 @@ func (c *CSSessionMgr) Connect(addr string, handler ICSMsgHandler, coder ICoder)
 	c.coder = coder
 	c.handler = handler
 	sess := c.CreateSession(false)
+	if sessionConcurrentFlag {
+		sess.SetSessionConcurrentFlag(true)
+	}
+
 	cache := &CSSessionCache{
 		sessionId:   sess.GetSessID(),
 		addr:        addr,
@@ -224,14 +228,14 @@ func (c *CSSessionMgr) Connect(addr string, handler ICSMsgHandler, coder ICoder)
 	GNet.Connect(addr, sess)
 }
 
-func (c *CSSessionMgr) Listen(addr string, handler ICSMsgHandler, coder ICoder, listenMaxCount int) bool {
+func (c *CSSessionMgr) Listen(addr string, handler ICSMsgHandler, coder ICoder, listenMaxCount int, sessionConcurrentFlag bool) bool {
 	if coder == nil {
 		coder = NewCoder()
 	}
 
 	c.coder = coder
 	c.handler = handler
-	return GNet.Listen(addr, c, listenMaxCount)
+	return GNet.Listen(addr, c, listenMaxCount, sessionConcurrentFlag)
 }
 
 var GCSSessionMgr *CSSessionMgr

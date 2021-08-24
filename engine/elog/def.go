@@ -1,6 +1,9 @@
 package elog
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 const (
 	LogDebug = iota
@@ -10,10 +13,10 @@ const (
 )
 
 var loglevels = []string{
-	"DEBUG",
-	"INFO",
-	"WARN",
-	"ERROR",
+	"[DEBUG]",
+	"[INFO]",
+	"[WARN]",
+	"[ERROR]",
 }
 
 type LogEvent struct {
@@ -21,6 +24,12 @@ type LogEvent struct {
 	content string
 	file    string
 	line    int
+}
+
+var GLogEventPool = sync.Pool{
+	New: func() interface{} {
+		return &LogEvent{}
+	},
 }
 
 const LogBuffEventSize = 100000
