@@ -137,7 +137,7 @@ func init() {
 	logger := elog.NewLogger(path, level)
 	logger.Init()
 
-	ELog.SetLogger(logger)
+	ELog = logger
 
 	connMaxCount := uint64(1)
 	tableMaxCount := uint64(1)

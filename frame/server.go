@@ -229,11 +229,11 @@ func (s *Server) Init() bool {
 
 func (s *Server) initModulesLog() {
 	//IOC依赖注入
-	ELog.SetLogger(s.logger)
-	etimer.ELog.SetLogger(s.logger)
-	edb.ELog.SetLogger(s.logger)
-	enet.ELog.SetLogger(s.logger)
-	eredis.ELog.SetLogger(s.logger)
+	ELog = s.logger
+	etimer.ELog = s.logger
+	edb.ELog = s.logger
+	enet.ELog = s.logger
+	eredis.ELog = s.logger
 }
 
 func (s *Server) printModulesVersion() {

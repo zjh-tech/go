@@ -24,8 +24,8 @@ func (t *TcpServer) Init() bool {
 
 	t.logger = elog.NewLogger(GCfg.LogInfo.Path, GCfg.LogInfo.Level)
 	t.logger.Init()
-	ELog.SetLogger(t.logger)
-	enet.ELog.SetLogger(t.logger)
+	ELog = t.logger
+	enet.ELog = t.logger
 
 	enet.GCSSessionMgr = enet.NewCSSessionMgr()
 	if !enet.GCSSessionMgr.Listen(GCfg.TcpInfo.Addr, GClientMsgHandler, nil, 3000, true) {

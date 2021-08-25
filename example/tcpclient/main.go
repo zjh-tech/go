@@ -24,8 +24,8 @@ func (t *TcpClient) Init() bool {
 
 	t.logger = elog.NewLogger(GCfg.LogInfo.Path, GCfg.LogInfo.Level)
 	t.logger.Init()
-	ELog.SetLogger(t.logger)
-	enet.ELog.SetLogger(t.logger)
+	ELog = t.logger
+	enet.ELog = t.logger
 
 	if !enet.GNet.Init() {
 		ELog.Error("TcpClient Net Init Error")
