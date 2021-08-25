@@ -119,22 +119,39 @@ func (s *Server) Init() bool {
 	}
 
 	//Redis
-	redisAddrs := s.srvCfg.GetRedisAddrs()
-	if s.srvCfg.RedisInfo != nil {
-		redisClient, connErr := eredis.ConnectRedis(redisAddrs, s.srvCfg.RedisInfo.Password)
-		if connErr != nil {
-			ELog.Errorf("Redis redisAddrs=%v,Connect Error", redisAddrs)
+	if s.srvCfg.IsOpenRedis() {
+		redisAddrs := s.srvCfg.GetRedisAddrs()
+		if len(redisAddrs) == 0 {
+			ELog.Error("Redis redisAddrs=%v Is Empty")
 			return false
+		}
+
+		if s.srvCfg.IsOpenRedisCluster() {
+			if redisClient, err := eredis.ConnectRedisCluster(redisAddrs, s.srvCfg.RedisInfo.Password); err != nil {
+				ELog.Errorf("Redis redisAddrs=%v Connect Cluster Error", redisAddrs)
+				return false
+			} else {
+				eredis.GRedisCmd = redisClient
+				ELog.Infof("Redis redisAddrs=%v Connect Cluster Success", redisAddrs)
+			}
 		} else {
-			eredis.GRedisClient = redisClient
-			ELog.Infof("Redis redisAddrs=%v,Connect Success", redisAddrs)
+			if redisClient, err := eredis.ConnectRedis(redisAddrs[0], s.srvCfg.RedisInfo.Password); err != nil {
+				ELog.Errorf("Redis redisAddr=%v Connect Error", redisAddrs[0])
+				return false
+			} else {
+				eredis.GRedisCmd = redisClient
+				ELog.Infof("Redis redisAddr=%v Connect Success", redisAddrs[0])
+			}
 		}
 	}
+
 	//Db
-	if s.srvCfg.DBInfo != nil && s.srvCfg.DBInfo.ConnMaxCount != 0 && s.srvCfg.DBInfo.TableMaxCount != 0 {
-		if err := edb.GDBModule.Init(s.srvCfg.DBInfo.ConnMaxCount, s.srvCfg.DBInfo.TableMaxCount, s.srvCfg.DBInfo.DBInfoList); err != nil {
-			ELog.Error(err)
-			return false
+	if s.srvCfg.IsOpenDB() {
+		if s.srvCfg.DBInfo != nil && s.srvCfg.DBInfo.ConnMaxCount != 0 && s.srvCfg.DBInfo.TableMaxCount != 0 {
+			if err := edb.GDBModule.Init(s.srvCfg.DBInfo.ConnMaxCount, s.srvCfg.DBInfo.TableMaxCount, s.srvCfg.DBInfo.DBInfoList); err != nil {
+				ELog.Error(err)
+				return false
+			}
 		}
 	}
 
@@ -177,7 +194,8 @@ func (s *Server) Init() bool {
 		}
 	}
 
-	if s.srvCfg.HttpInfo != nil {
+	//http
+	if s.srvCfg.IsOpenHttp() {
 		if len(s.srvCfg.HttpInfo.Cert) != 0 && len(s.srvCfg.HttpInfo.Key) != 0 {
 			GSGLBClient.Init(s.srvCfg.HttpInfo.Url, true)
 		} else {

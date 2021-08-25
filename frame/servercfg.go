@@ -25,20 +25,24 @@ type RedisConnSpec struct {
 }
 
 type RedisSpec struct {
+	OpenFlag int              `yaml:"openflag"`
+	Cluster  int              `yaml:"cluster"`
 	Password string           `yaml:"password"`
 	AddrList []*RedisConnSpec `yaml:"addrlist"`
 }
 
 type DBSpec struct {
+	OpenFlag      int               `yaml:"openflag"`
 	ConnMaxCount  uint64            `yaml:"connmaxcount"`
 	TableMaxCount uint64            `yaml:"tablemaxcount"`
 	DBInfoList    []*edb.DBConnSpec `yaml:"dblist"`
 }
 
 type HttpSpec struct {
-	Url  string
-	Cert string
-	Key  string
+	OpenFlag int    `yaml:"openflag"`
+	Url      string `yaml:"url"`
+	Cert     string `yaml:"cert"`
+	Key      string `yaml:"key"`
 }
 
 type ServerCfg struct {
@@ -59,6 +63,22 @@ func (s *ServerCfg) GetRedisAddrs() []string {
 		addrs = append(addrs, info.Addr)
 	}
 	return addrs
+}
+
+func (s *ServerCfg) IsOpenRedis() bool {
+	return s.RedisInfo.OpenFlag != 0
+}
+
+func (s *ServerCfg) IsOpenRedisCluster() bool {
+	return s.RedisInfo.Cluster != 0
+}
+
+func (s *ServerCfg) IsOpenDB() bool {
+	return s.DBInfo.OpenFlag != 0
+}
+
+func (s *ServerCfg) IsOpenHttp() bool {
+	return s.HttpInfo.OpenFlag != 0
 }
 
 func ReadServerCfg(path string) (*ServerCfg, error) {
