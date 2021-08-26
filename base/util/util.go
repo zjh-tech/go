@@ -20,8 +20,8 @@ func GetMillsecond() int64 {
 	return time.Now().UnixNano() / 1e6
 }
 
-func GetSecond() uint32 {
-	return uint32(time.Now().UnixNano() / 1e9)
+func GetSecond() int64 {
+	return time.Now().UnixNano() / 1e9
 }
 
 //file
