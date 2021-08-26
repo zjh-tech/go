@@ -2,6 +2,8 @@ package frame
 
 import "github.com/zjh-tech/go-frame/base/util"
 
+//Client Req Too Much, Req Is Async Operator
+
 type AsyncLockItem struct {
 	Lockkey       int
 	StartLockTime int64
