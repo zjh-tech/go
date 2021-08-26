@@ -20,8 +20,9 @@ type TcpSpec struct {
 }
 
 type Cfg struct {
-	LogInfo LogSpec `yaml:"log"`
-	TcpInfo TcpSpec `yaml:"tcp"`
+	LogInfo        LogSpec `yaml:"log"`
+	TcpInfo        TcpSpec `yaml:"tcp"`
+	MultiGoroutine int     `yaml:"multigoroutine"`
 }
 
 func NewCfg() *Cfg {

@@ -9,3 +9,4 @@ tcp:
   intervaltime: 10
   limit: 1000
 
+multigoroutine: 1 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/zjh-tech/go-frame/engine/elog"
 	"github.com/zjh-tech/go-frame/engine/enet"
+	"github.com/zjh-tech/go-frame/frame"
 )
 
 type TcpServer struct {
@@ -28,8 +29,14 @@ func (t *TcpServer) Init() bool {
 	enet.ELog = t.logger
 
 	enet.GCSSessionMgr = enet.NewCSSessionMgr()
-	if !enet.GCSSessionMgr.Listen(GCfg.TcpInfo.Addr, GClientMsgHandler, nil, 3000, true) {
-		return false
+	if GCfg.MultiGoroutine != 0 {
+		if !enet.GCSSessionMgr.Listen(GCfg.TcpInfo.Addr, GClientMsgHandler, nil, 3000, true) {
+			return false
+		}
+	} else {
+		if !enet.GCSSessionMgr.Listen(GCfg.TcpInfo.Addr, GClientMsgHandler, nil, 3000, false) {
+			return false
+		}
 	}
 
 	PrintQps()
@@ -41,8 +48,13 @@ func (t *TcpServer) Init() bool {
 func (d *TcpServer) Run() {
 	busy := false
 
+	netModule := enet.GNet
 	for {
 		busy = false
+
+		if netModule.Run(frame.NetLoopCount) {
+			busy = true
+		}
 
 		if !busy {
 			time.Sleep(1 * time.Millisecond)
